@@ -1,0 +1,17 @@
+{
+  "name": "basejs",
+  "version": "1.0.0",
+  "description": "Error handler, module handler, asset loader and loading screen",
+  "main": "base.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bootstrap"
+  ],
+  "author": "aucguy",
+  "license": "MIT",
+  "devDependencies": {
+    "grunt-contrib-uglify": "^1.0.1"
+  }
+}
