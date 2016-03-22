@@ -3,14 +3,16 @@
   "version": "1.0.0",
   "description": "Error handler, module handler, asset loader and loading screen",
   "main": "base.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aucguy/Basejs.git"
   },
   "keywords": [
     "bootstrap"
   ],
   "author": "aucguy",
   "license": "MIT",
+  licenseUrl: "https://opensource.org/licenses/mit-license.php",
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-contrib-concat": "^1.0.0",
