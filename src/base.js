@@ -16,8 +16,14 @@ var base = (function(global) {
    */
   var listenerHooks = [];
 
+  /**
+   * the ids returned by requestAnimationFrame
+   */
   var requestAnimationHooks = [];
 
+  /**
+   * the ids returned by setTimeout
+   */
   var timeoutHooks = [];
 
   /**
@@ -56,10 +62,10 @@ var base = (function(global) {
    *
    * @param func the function to call and report errors for
    */
-  function runSafely(func) {
+  function runSafely(func, self, args) {
     if (errorThrown) return; //don't do anything if already failed
     try {
-      func();
+      func.apply(self, args);
     } catch (error) {
       onError(error);
     }
@@ -75,10 +81,13 @@ var base = (function(global) {
    */
   function external(func) {
     return function() {
-      runSafely(func);
+      runSafely(func, this, arguments);
     };
   }
 
+  /**
+   * internal function used to create callbacks that handle errors
+   */
   function simpleCallbackRegister(func, hooks) {
     return function (/*args*/) {
       //from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/arguments
@@ -91,6 +100,9 @@ var base = (function(global) {
     };
   }
 
+  /**
+   * like above, but for unregistering callbacks
+   */
   function simpleCallbackUnregister(func, hooks) {
     return function(id) {
       func(id);
@@ -159,6 +171,7 @@ var base = (function(global) {
     }
   }
 
+  //finds requestAnimationFrame functions
   //taken from phaser and modified
   var vendors = [
     'ms',
@@ -167,44 +180,70 @@ var base = (function(global) {
     'o'
   ];
 
-  var requestAnimationFrame, cancelAnimationFrame;
+  var requestAnimationFrame = global.requestAnimationFrame;
+  var cancelAnimationFrame = global.cancelAnimationFrame;
 
   for (var x = 0; x < vendors.length && !requestAnimationFrame; x++) {
     requestAnimationFrame = global[vendors[x] + 'RequestAnimationFrame'];
     cancelAnimationFrame = global[vendors[x] + 'CancelAnimationFrame'];
   }
 
+  /**
+   * like setInterval, but for requestAnimationFrame
+   */
   var requestAnimationFrame_ = simpleCallbackRegister(requestAnimationFrame,
     requestAnimationHooks);
   var cancelAnimationFrame_ = simpleCallbackUnregister(cancelAnimationFrame,
     requestAnimationHooks);
 
+  /**
+   * like setInterval, but for setTimeout
+   */
   var setTimeout_ = simpleCallbackRegister(setTimeout, timeoutHooks);
   var clearTimeout_ = simpleCallbackUnregister(clearTimeout, timeoutHooks);
 
+  var WEBKIT = 'webkit';
 
+  /**
+   * copies properties from one object to another
+   */
+  function copyProperties(obj) {
+    var self = obj;
+    var ret = {};
+
+    while(obj) {
+      var keys = Object.getOwnPropertyNames(obj);
+      for(var i=0; i<keys.length; i++) {
+        var key = keys[i];
+        var value;
+        if(key.startsWith(WEBKIT)) { //avoid annoying deprecation warnings
+          var key2 = key.slice(WEBKIT.length);
+          value = obj[key2];
+          if(!value) {
+            key2 = key2[0].toLowerCase() + key2.slice(1);
+            value = obj[key2];
+            if(!value) value = obj[key];
+          }
+        } else {
+          value = obj[key];
+        }
+
+        if(typeof value == "function") {
+          ret[key] = value.bind(self); //make it execute on original
+        } else {
+          ret[key] = value;
+        }
+      }
+      obj = Object.getPrototypeOf(obj);
+    }
+    return ret;
+  }
 
   /**
    * create an overriden custom window object.
    */
   function customWindow() {
-    var win = {};
-    var window = global;
-
-    while(window) {
-      var keys = Object.getOwnPropertyNames(window);
-      for(var i=0; i<keys.length; i++) {
-        var key = keys[i];
-        var value = global[key];
-        console.log(key);
-        if(typeof value == "function") {
-          win[key] = value.bind(global);
-        } else {
-          win[key] = value;
-        }
-      }
-      window = Object.getPrototypeOf(window);
-    }
+    var win = copyProperties(global);
 
     win.setInterval = setInterval_;
     win.clearInterval = clearInterval_;
@@ -300,6 +339,17 @@ var base = (function(global) {
   var loaded = 0;
 
   /**
+   * custom tag name bindings. Null value for text
+   */
+  var tagnames = {
+    'image': 'img',
+    'spritesheet': 'img',
+    'text': 'text',
+    'json': 'text',
+    'tilemap': 'text'
+  };
+
+  /**
    * function that has the index
    */
   var indexFunc = (global.base ? global.base.indexFunc : null) || [];
@@ -314,12 +364,13 @@ var base = (function(global) {
   /**
    * creates the internal asset format
    */
-  function makeAsset(id, url, type, data, xhr) {
+  function makeAsset(id, url, type, data, extra, xhr) {
     return {
       type: type,
       id: id,
       url: url,
       data: data,
+      extra: extra ? extra : null,
       xhr: xhr ? xhr : null
     };
   }
@@ -328,15 +379,16 @@ var base = (function(global) {
    * loads a text asset via ajax
    *
    * @param id the id of the asset
-   * @param asset the url where the asset is located relative to the base path
-   * @param callback called when the requested assets is loaded
+   * @param url the url where the asset is located relative to the base path
+   * @param type the type of the asset
+   * @param extra the metadata associated with the asset
    */
-  function loadText(id, url, type) {
+  function loadText(id, url, type, extra) {
     if (id in assets) return;
     incrLoading();
     ajax(join(basePath, url), function(request) {
       try {
-        assets[id] = makeAsset(id, url, type, request.responseText, request);
+        assets[id] = makeAsset(id, url, type, request.responseText, extra, request);
         decrLoading();
       } catch (error) {
         decrLoading();
@@ -354,22 +406,24 @@ var base = (function(global) {
    * @param id the id of the asset
    * @param url the url where the asset is located
    * @param type the tagname of the asset
+   * @param extra the metadata associated with the asset
    */
-  function loadTag(id, url, type) {
+  function loadTag(id, url, type, extra) {
     if (id in assets) return;
     incrLoading();
-    var tag = document.createElement(type);
+    var tag = document.createElement(tagnames[type] || type);
     if (type == "script") {
       document.head.appendChild(tag);
+      tag.onload = decrLoading;
     } else {
-      tag.onload = function() {
-        assets[id] = makeAsset(id, url, type, tag);
+      tag.onload = base.external(function() {
+        assets[id] = makeAsset(id, url, type, tag, extra);
         decrLoading();
-      };
-      tag.onerror = function() {
-        throw (new Error("failed to load asset" + id + " at " + url));
-      };
+      });
     }
+    tag.onerror = base.external(function() {
+      throw (new Error("failed to load asset '" + id + "' at '" + url + "'"));
+    });
     tag.src = join(basePath, url);
   }
 
@@ -381,13 +435,11 @@ var base = (function(global) {
    * @param url the url of the asset relative to the base path
    * @param type the type of the asset. Either the tag name or 'text'
    */
-  function loadAsset(id, url, type) {
-    if (type == "text") {
-      loadText(id, url, type);
-    } else if (type == "script") {
-      loadTag(id, url, type);
+  function loadAsset(id, url, type, extra) {
+    if (tagnames[type] == 'text') {
+      loadText(id, url, type, extra);
     } else {
-      loadTag(id, url, type);
+      loadTag(id, url, type, extra);
     }
   }
 
@@ -399,7 +451,8 @@ var base = (function(global) {
    */
   function loadAssets(assets) {
     for (var i = 0; i < assets.length; i++) {
-      loadAsset(assets[i][0], assets[i][1], assets[i][2]);
+      var asset = assets[i];
+      loadAsset(asset[0], asset[1], asset[2], asset[3]);
     }
   }
 
@@ -418,8 +471,6 @@ var base = (function(global) {
     loaded++;
   }
 
-  registerCallbacks.push(decrLoading);
-
   /**
    * sends a request to the server for the given asset
    */
@@ -434,8 +485,8 @@ var base = (function(global) {
     // taken from
     // http://www.w3schools.com/ajax/tryit.asp?filename=tryajax_first
     // and modified
-    var request = window.XMLHttpRequest ? new XMLHttpRequest() :
-      new ActiveXObject("Microsoft.XMLHTTP");
+  var request = window.XMLHttpRequest ? new XMLHttpRequest() :
+    new ActiveXObject("Microsoft.XMLHTTP");
     request.onreadystatechange = external(function() {
       if (request.readyState == 4) {
         if (request.status == 200 || request.status === 0) {
