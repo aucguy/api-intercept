@@ -349,6 +349,8 @@ var base = (function(global) {
     'tilemap': 'text'
   };
 
+  var hasWebAudio = !!(global.AudioContext || global.webkitAudioContext);
+
   /**
    * function that has the index
    */
@@ -386,9 +388,9 @@ var base = (function(global) {
   function loadText(id, url, type, extra) {
     if (id in assets) return;
     incrLoading();
-    ajax(join(basePath, url), function(request) {
+    ajax(join(basePath, url), type == 'audio', function(request) {
       try {
-        assets[id] = makeAsset(id, url, type, request.responseText, extra, request);
+        assets[id] = makeAsset(id, url, type, request.response, extra, request);
         decrLoading();
       } catch (error) {
         decrLoading();
@@ -436,7 +438,7 @@ var base = (function(global) {
    * @param type the type of the asset. Either the tag name or 'text'
    */
   function loadAsset(id, url, type, extra) {
-    if (tagnames[type] == 'text') {
+    if (tagnames[type] == 'text' || type == 'audio' && hasWebAudio) {
       loadText(id, url, type, extra);
     } else {
       loadTag(id, url, type, extra);
@@ -474,7 +476,7 @@ var base = (function(global) {
   /**
    * sends a request to the server for the given asset
    */
-  function ajax(path, onready, onfail) {
+  function ajax(path, arraybuffer, onready, onfail) {
     if (typeof onfail == 'undefined') {
       onfail = function(request) {
         console.warn("asset '" + path + "' failed to load with a status of " +
@@ -485,8 +487,9 @@ var base = (function(global) {
     // taken from
     // http://www.w3schools.com/ajax/tryit.asp?filename=tryajax_first
     // and modified
-  var request = window.XMLHttpRequest ? new XMLHttpRequest() :
-    new ActiveXObject("Microsoft.XMLHTTP");
+    var request = window.XMLHttpRequest ? new XMLHttpRequest() :
+        new ActiveXObject("Microsoft.XMLHTTP");
+    request.responseType = arraybuffer ? 'arraybuffer' : 'text';
     request.onreadystatechange = external(function() {
       if (request.readyState == 4) {
         if (request.status == 200 || request.status === 0) {

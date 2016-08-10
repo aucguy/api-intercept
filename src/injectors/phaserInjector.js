@@ -15,6 +15,7 @@ base.registerModule('phaserInjector', function() {
         loaded: true,
         error: false
       };
+      if(file.type == 'audio') file.autoDecode = true;
       if(asset.extra) {
         var names = Object.getOwnPropertyNames(asset.extra);
         for(var k=0; k<names.length; k++) {
