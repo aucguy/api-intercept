@@ -106,7 +106,7 @@ var base = (function(global) {
   function simpleCallbackUnregister(func, hooks) {
     return function(id) {
       func(id);
-      intervalHooks.splice(intervalHooks.indexOf(id), 1);
+      hooks.splice(hooks.indexOf(id), 1);
     };
   }
 
@@ -354,7 +354,7 @@ var base = (function(global) {
   /**
    * function that has the index
    */
-  var indexFunc = (global.base ? global.base.indexFunc : null) || [];
+  var indexFunc = (global.base ? global.base.indexFunc : null) || function() {};
 
   /**
    * returns a loaded asset with the given id
@@ -372,7 +372,7 @@ var base = (function(global) {
       id: id,
       url: url,
       data: data,
-      extra: extra ? extra : null,
+      extra: extra ? extra : {},
       xhr: xhr ? xhr : null
     };
   }
@@ -390,7 +390,8 @@ var base = (function(global) {
     incrLoading();
     ajax(join(basePath, url), type == 'audio', function(request) {
       try {
-        assets[id] = makeAsset(id, url, type, request.response, extra, request);
+        var data = ['json', 'tilemap'].indexOf(type) != -1 ? JSON.parse(request.response) : request.response;
+        assets[id] = makeAsset(id, url, type, data, extra, request);
         decrLoading();
       } catch (error) {
         decrLoading();
@@ -563,11 +564,13 @@ var base = (function(global) {
    */
   stateChangeCallbacks = [];
 
+  var renderLoadingScreen = (global.base ? global.base.renderLoadingScreen : null) || function() {};
+
   /**
    * call this to start everything
    */
   function main() {
-    renderLoadingScreen();
+    renderLoadingScreen(DISPLAY_ID, loading, loaded);
     loadTickInterval = setInterval_(tickLoading, 100);
     changeState(States.INDEX_NOT_LOADED);
   }
@@ -578,39 +581,13 @@ var base = (function(global) {
    */
   function tickLoading() {
     tryLoadIndex();
-    renderLoadingScreen();
+    renderLoadingScreen(DISPLAY_ID, loading, loaded);
     if (loading === 0) {
       changeState(States.APP_INITING);
       mainModule = importModule('main');
       mainModule.init();
       changeState(States.APP_RUNNING);
     }
-  }
-
-  /**
-   * renders the loading screen
-   */
-  function renderLoadingScreen() {
-    var display = document.getElementById(DISPLAY_ID);
-    var context = display.getContext("2d");
-
-    context.fillStyle = "#000000";
-    context.fillRect(0, 0, display.width, display.height);
-    context.textBaseline = "top";
-    context.font = "72px Arial";
-    context.strokeStyle = "#FFFFFF";
-    var text, bigText;
-    if(loadingState == States.ASSETS_LOADING) {
-      var total = loading + loaded;
-      bigText = "Loading: " + total + "/" + total;
-      text = "Loading: " + loaded + "/" + total;
-    } else {
-      text = loadingState == States.APP_INITING ? "Initializing" : "Bad State";
-      bigText = text;
-    }
-    var metric = context.measureText(bigText);
-    context.strokeText(text, display.width / 2 - metric.width / 2,
-      display.height / 2 - 72 / 2);
   }
 
   /**
@@ -698,6 +675,7 @@ var base = (function(global) {
     loadAsset: loadAsset,
     loadAssets: loadAssets,
     decrLoading: decrLoading,
+    renderLoadingScreen: renderLoadingScreen,
     getStates: function() {
       return States;
     },

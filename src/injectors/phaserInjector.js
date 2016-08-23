@@ -1,31 +1,18 @@
 base.registerModule('phaserInjector', function() {
-  function injectIntoPhaser(loader) {
+  function injectIntoPhaser(load) {
     var assets = base.getAssets();
     var keys = Object.keys(assets);
     for(var i=0; i<keys.length; i++) {
       var asset = assets[keys[i]];
-      var file = {
-        type: asset.type,
-        key: asset.id,
-        path: base.getBasePath(),
-        url: asset.url,
-        syncPoint: false,
-        data: asset.data,
-        loading: false,
-        loaded: true,
-        error: false
-      };
-      if(file.type == 'audio') file.autoDecode = true;
-      if(asset.extra) {
-        var names = Object.getOwnPropertyNames(asset.extra);
-        for(var k=0; k<names.length; k++) {
-          file[names[k]] = asset.extra[names[k]];
-        }
+      if(asset.type == 'image') {
+        load.cache.addImage(asset.id, asset.url, asset.data);
+      } else if(asset.type == 'tilemap'){
+        load.cache.addTilemap(asset.id, asset.url, asset.data, Phaser.Tilemap.TILED_JSON);
+      } else if(asset.type == 'spritesheet') {
+        load.cache.addSpriteSheet(asset.id, asset.url, asset.data, asset.extra.frameWidth, asset.extra.frameHeight);
       }
-      if(['json', 'tilemap'].indexOf(file.type) != -1) {
-        loader.jsonLoadComplete(file, asset.xhr);
-      } else {
-        loader.fileComplete(file, asset.xhr);
+      if(['image', 'spritesheet'].indexOf(asset.type) != -1 && asset.extra.pixelated){
+        load.cache.getBaseTexture(asset.id).scaleMode = Phaser.scaleModes.NEAREST;
       }
     }
   }
