@@ -666,6 +666,9 @@ var base = (function(global) {
     setBasePath: function(x) {
       basePath = x;
     },
+    hasWebAudio: function() {
+      return hasWebAudio;
+    },
     getAsset: getAsset,
     getAssets: function() {
       return assets;
