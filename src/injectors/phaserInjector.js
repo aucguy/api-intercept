@@ -12,6 +12,8 @@ base.registerModule('phaserInjector', function() {
         load.cache.addSpriteSheet(asset.id, asset.url, asset.data, asset.extra.frameWidth, asset.extra.frameHeight);
       } else if(asset.type == 'audio') {
         load.cache.addSound(asset.id, asset.url, asset.data, base.hasWebAudio(), !base.hasWebAudio());
+      } else if(asset.type == 'json') {
+        load.cache.addJSON(asset.id, asset.url, asset.data);
       }
       if(['image', 'spritesheet'].indexOf(asset.type) != -1 && asset.extra.pixelated){
         load.cache.getBaseTexture(asset.id).scaleMode = Phaser.scaleModes.NEAREST;
