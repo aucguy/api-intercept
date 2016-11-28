@@ -1,4 +1,5 @@
 var base = (function(global) {
+  global.base = global.base || {};
   //---Error Handling---
 
   /**
@@ -354,7 +355,7 @@ var base = (function(global) {
   /**
    * function that has the index
    */
-  var indexFunc = (global.base ? global.base.indexFunc : null) || function() {};
+  global.base.indexFunc = global.base.indexFunc || null; //so it isn't undefined
 
   /**
    * returns a loaded asset with the given id
@@ -564,7 +565,12 @@ var base = (function(global) {
    */
   stateChangeCallbacks = [];
 
-  var renderLoadingScreen = (global.base ? global.base.renderLoadingScreen : null) || function() {};
+  global.base.renderLoadingScreen = global.base.renderLoadingScreen || null;
+  function renderLoadingScreen(display_id, loading, loaded) {
+    if(global.base.renderLoadingScreen !== null) {
+      global.base.renderLoadingScreen(display_id, loading, loaded);
+    }
+  }
 
   /**
    * call this to start everything
@@ -604,8 +610,8 @@ var base = (function(global) {
    * attempts to load the index
    */
   function tryLoadIndex() {
-    if(loadingState == States.INDEX_NOT_LOADED && indexFunc !== null) {
-      indexFunc();
+    if(loadingState == States.INDEX_NOT_LOADED && global.base.indexFunc !== null) {
+      global.base.indexFunc();
       changeState(States.ASSETS_LOADING);
     }
   }
@@ -669,6 +675,7 @@ var base = (function(global) {
     hasWebAudio: function() {
       return hasWebAudio;
     },
+    indexFunc: global.base.indexFunc,
     getAsset: getAsset,
     getAssets: function() {
       return assets;
@@ -678,7 +685,7 @@ var base = (function(global) {
     loadAsset: loadAsset,
     loadAssets: loadAssets,
     decrLoading: decrLoading,
-    renderLoadingScreen: renderLoadingScreen,
+    renderLoadingScreen: global.base.renderLoadingScreen,
     getStates: function() {
       return States;
     },
