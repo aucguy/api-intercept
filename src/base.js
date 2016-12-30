@@ -31,6 +31,8 @@ var base = (function(global) {
    * the uncaught error that was thrown and stopped everyting
    */
   var errorThrown = null;
+  
+  global.base.displayId = global.base.displayId || null;
 
   /**
    * called when an error occurs. This reports an error to the user and
@@ -50,7 +52,7 @@ var base = (function(global) {
 
     var errorDiv = document.getElementById("error div");
     var errorText = document.getElementById("error text");
-    var display = document.getElementById("display");
+    var display = document.getElementById(global.base.displayId || "display");
 
     // swap displays and display error
     if(errorText) errorText.innerHTML = error.stack;
@@ -646,6 +648,7 @@ var base = (function(global) {
 
   //exports
   return {
+    displayId: global.base.displayId,
     onError: onError,
     runSafely: runSafely,
     external: external,
