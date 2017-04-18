@@ -452,13 +452,15 @@ var base = (function(global) {
   /**
    * loads multiple assets
    *
-   * @param assets a list of lists. The inner list's elements correspond
+   * @param assets a list of lists. The inner lists element's correspond
    *    to a particular asset's id, url and type, in that order.
+   * @param base the url the asset urls are relative to
    */
-  function loadAssets(assets) {
+  function loadAssets(assets, base) {
+    base = base || '';
     for (var i = 0; i < assets.length; i++) {
       var asset = assets[i];
-      loadAsset(asset[0], asset[1], asset[2], asset[3]);
+      loadAsset(asset[0], join(base, asset[1]), asset[2], asset[3]);
     }
   }
 
@@ -526,8 +528,12 @@ var base = (function(global) {
       if (!part || part === ".")
         continue;
       // Interpret ".." to pop the last segment
-      if (part === "..")
-        newParts.pop();
+      if (part === "..") {
+        if(newParts.length === 0 || newParts[newParts.length - 1] == "..")
+          newParts.push(part);
+        else
+          newParts.pop();
+      }
       // Push new path segments.
       else
         newParts.push(part);
