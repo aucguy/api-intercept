@@ -1,5 +1,5 @@
 {
-  "name": "basejs",
+  "name": "baseloader",
   "version": "1.0.0",
   "description": "Error handler, module handler, asset loader and loading screen",
   "main": "base.js",
@@ -14,8 +14,8 @@
   "license": "MIT",
   "licenseUrl": "https://opensource.org/licenses/mit-license.php",
   "devDependencies": {
-    "grunt": "^0.4.5",
+    "grunt": "^1.0.3",
     "grunt-contrib-concat": "^1.0.0",
-    "grunt-contrib-uglify": "^1.0.1"
+    "grunt-contrib-uglify": "^3.4.0"
   }
 }

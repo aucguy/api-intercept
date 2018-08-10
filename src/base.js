@@ -59,6 +59,10 @@ var base = (function(global) {
     if(errorDiv) errorDiv.style.display = "block";
     if(display) display.style.display = "none";
   }
+  
+  window.addEventListener('error', function(event) {
+    onError(event.error);
+  });
 
   /**
    * calls a function and reports any errors thrown via calling onError()
@@ -525,22 +529,31 @@ var base = (function(global) {
       var part = parts[i];
       // Remove leading and trailing slashes
       // Also remove "." segments
-      if (!part || part === ".")
+      if (!part || part === ".") {
         continue;
+      }
       // Interpret ".." to pop the last segment
       if (part === "..") {
-        if(newParts.length === 0 || newParts[newParts.length - 1] == "..")
+        if(newParts.length === 0 || newParts[newParts.length - 1] == "..") {
           newParts.push(part);
-        else
+        } else {
           newParts.pop();
-      }
-      // Push new path segments.
-      else
+        }
+      } else {
+        // Push new path segments.
         newParts.push(part);
+      }
     }
     // Preserve the initial slash if there was one.
-    if (parts[0].startsWith("/") || parts[0].startsWith("\\"))
-      newParts.unshift("");
+    var initialSlash = false;
+    for(i = 0; i < arguments.length; i++) {
+      if(arguments[i]) {
+        if(arguments[i].startsWith("/") || arguments[i].startsWith("\\")) {
+          newParts.unshift("");
+        }
+        break;
+      }
+    }
     // Turn back into a single string path.
     return newParts.join("/") || (newParts.length ? "/" : ".");
   }
@@ -694,6 +707,8 @@ var base = (function(global) {
     loadAsset: loadAsset,
     loadAssets: loadAssets,
     decrLoading: decrLoading,
+    ajax: ajax,
+    join: join,
     renderLoadingScreen: global.base.renderLoadingScreen,
     getStates: function() {
       return States;
