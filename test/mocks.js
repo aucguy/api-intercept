@@ -26,5 +26,27 @@
     });
   }
 
+  function ClearIntervalMock() {
+    var sup = test.internal.Mock();
+    var originalFunc = null;
+
+    return bu.internal.mixin(sup, {
+      setup() {
+        sup.setup();
+        originalFunc = global.clearInterval;
+        global.clearInterval = id => {
+          sup.calls().push({
+            args: [id]
+          });
+        };
+      },
+      cleanup() {
+        sup.cleanup();
+        global.clearInterval = originalFunc;
+      }
+    });
+  }
+
   test.internal.registerMock('setInterval', SetIntervalMock());
+  test.internal.registerMock('clearInterval', ClearIntervalMock());
 })(this);

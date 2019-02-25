@@ -159,6 +159,26 @@ modules.tests = (function() {
       test.assert(fired);
     });
 
+    manager.add('clearInterval fires remove event', testCase => {
+      testCase.mock(['setInterval', 'clearInterval']);
+
+      var ctx = bu.createCtx(['interval']);
+      var id = null;
+      var fired = false;
+
+      ctx.handler('interval').on('remove', event => {
+        test.assert(event.id === id);
+        fired = true;
+      });
+
+      ctx.run(() => {
+        id = setInterval(() => {}, 1000);
+        clearInterval(id);
+      });
+
+      test.assert(fired);
+    });
+
     return manager;
   }
 

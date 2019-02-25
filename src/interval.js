@@ -18,6 +18,7 @@
       install() {
         sup.install();
         setIntervalOriginal = global.setInterval;
+        clearIntervalOriginal = global.clearInterval;
         var self = this;
 
         global.setInterval = function(func, period) {
@@ -45,6 +46,16 @@
               });
             }
           }, period);
+        };
+
+        global.clearInterval = id => {
+          var ctx = bu.internal.getCurrCtx();
+          self.getSpecificHandler(ctx).fire({
+            name: 'remove',
+            ctx,
+            id
+          });
+          clearIntervalOriginal.call(global, id);
         };
       }
     });
