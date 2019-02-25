@@ -18,14 +18,19 @@
       install() {
         sup.install();
         setIntervalOriginal = global.setInterval;
+        var self = this;
 
-        global.setInterval = (func, period) => {
+        global.setInterval = function(func, period) {
           var ctx = bu.internal.getCurrCtx();
+          var args = Array.prototype.slice.call(arguments, 2);
+
           return setIntervalOriginal.call(global, () => {
             try {
-              ctx.run(func);
+              ctx.run(() => {
+                func.apply(this, args);
+              });
             } catch (error) {
-              this.getSpecificHandler(ctx).fire({
+              self.getSpecificHandler(ctx).fire({
                 name: 'error',
                 ctx,
                 error

@@ -116,6 +116,29 @@ modules.tests = (function() {
 
       test.assert(checked);
     });
+
+    manager.add('setInterval handles parameter arguments', testCase => {
+      testCase.mock(['setInterval']);
+
+      var ctx = bu.createCtx(['interval']);
+      var checked = false;
+      ctx.run(() => {
+        setInterval((arg1, arg2) => {
+          test.assert(arg1 === 'foo');
+          test.assert(arg2 === 'bar');
+          checked = true;
+        }, 1000, 'foo', 'bar');
+      });
+
+      //begin environment emulation
+      for (var call of testCase.calls('setInterval')) {
+        call.args[0].apply(null);
+      }
+      //end environment emulation
+
+      test.assert(checked);
+    });
+
     return manager;
   }
 
