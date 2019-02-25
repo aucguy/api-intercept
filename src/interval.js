@@ -24,6 +24,14 @@
           var ctx = bu.internal.getCurrCtx();
           var args = Array.prototype.slice.call(arguments, 2);
 
+          self.getSpecificHandler(ctx).fire({
+            name: 'add',
+            ctx,
+            func,
+            period,
+            args
+          });
+
           return setIntervalOriginal.call(global, () => {
             try {
               ctx.run(() => {

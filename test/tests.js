@@ -139,6 +139,26 @@ modules.tests = (function() {
       test.assert(checked);
     });
 
+    manager.add('setInterval fires add event', testCase => {
+      testCase.mock(['setInterval']);
+
+      var ctx = bu.createCtx(['interval']);
+      var fired = false;
+
+      ctx.handler('interval').on('add', event => {
+        test.assert(event.args[0] === 'testing');
+        fired = true;
+      });
+
+      var callback = () => {};
+
+      ctx.run(() => {
+        setInterval(() => {}, 1000, 'testing');
+      });
+
+      test.assert(fired);
+    });
+
     return manager;
   }
 
