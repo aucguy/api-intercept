@@ -55,6 +55,9 @@ var bu = (function(global) {
        *    event.name will be called.
        **/
       fire(event) {
+        if (event.name === undefined) {
+          throw (new Error('event must have a name'));
+        }
         if (listeners[event.name] !== undefined) {
           for (var listener of listeners[event.name]) {
             listener(event);
@@ -143,7 +146,9 @@ var bu = (function(global) {
    * @return the newly created context
    **/
   function createCtx(neededExternals) {
+    neededExternals = neededExternals || [];
     var ctx = Context();
+
     for (var name of neededExternals) {
       if (name in externals) {
         var external = externals[name];

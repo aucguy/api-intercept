@@ -5,6 +5,84 @@ modules.tests = (function() {
   function createTests() {
     var manager = test.createManager();
 
+    manager.add('Mixin combines properties', testCase => {
+      var parent1 = {
+        a: 1,
+        b: 2
+      };
+
+      var parent2 = {
+        c: 3
+      };
+
+      var child = bu.internal.mixin(parent1, parent2);
+
+      test.assert(child.a == parent1.a);
+      test.assert(child.b == parent1.b);
+      test.assert(child.c == parent2.c);
+    });
+
+    /**
+     * Ensures that events passed to event aware are passed to the correct
+     * listeners.
+     **/
+    manager.add('EventAware handles events', testCase => {
+      var eventAware = bu.EventAware();
+
+      eventAware.on('typeA', event => {
+        test.assert(event.isA);
+      });
+
+      eventAware.on('typeB', event => {
+        test.assert(event.isB);
+      });
+
+      eventAware.fire({
+        name: 'typeA',
+        isA: true
+      });
+
+      eventAware.fire({
+        name: 'typeB',
+        isB: true
+      });
+    });
+
+    /**
+     * Ensures that an event without a name fails when fired.
+     **/
+    manager.add('EventAware throws when an event has no name', testCase => {
+      var thrown;
+      try {
+        bu.EventAware().fire({});
+        thrown = false;
+      } catch (e) {
+        thrown = true;
+      }
+      test.assert(thrown);
+    });
+
+    manager.add('nested contexts are handled', testCase => {
+      var ctx1 = bu.createCtx();
+      ctx1.run(() => {
+        test.assert(bu.internal.getCurrCtx() === ctx1);
+
+        var ctx2 = bu.createCtx();
+        ctx2.run(() => {
+          test.assert(bu.internal.getCurrCtx() === ctx2);
+        });
+
+        test.assert(bu.internal.getCurrCtx() === ctx1);
+
+        var ctx3 = bu.createCtx();
+        ctx3.run(() => {
+          test.assert(bu.internal.getCurrCtx() === ctx3);
+        });
+
+        test.assert(bu.internal.getCurrCtx() === ctx1);
+      });
+    });
+
     /*
      * Ensures that a error thrown by the callback passed to setInterval
      * fires an error event on the context under which setInterval was
