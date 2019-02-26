@@ -42,13 +42,13 @@ modules.test = (function(global) {
           try {
             var testCase = TestCase();
             test.func(testCase);
-            testCase.cleanup();
           } catch (error) {
             fails.push({
               name: test.name,
               error
             });
           }
+          testCase.cleanup();
         }
         return {
           total: tests.length,

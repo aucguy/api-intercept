@@ -1,5 +1,5 @@
 var modules = modules || {};
-modules.tests = (function() {
+modules.tests = (function(global) {
   var test = modules.test;
 
   function createTests() {
@@ -83,16 +83,23 @@ modules.tests = (function() {
       });
     });
 
+    intervalOrTimeout(manager, 'setInterval', 'clearInterval', 'interval');
+    intervalOrTimeout(manager, 'setTimeout', 'clearTimeout', 'timeout');
+
+    return manager;
+  }
+
+  function intervalOrTimeout(manager, setName, clearName, handler) {
     /*
      * Ensures that a error thrown by the callback passed to setInterval
      * fires an error event on the context under which setInterval was
      * called.
      */
-    manager.add('interval handler catches errors', testCase => {
-      testCase.mock(['setInterval']);
-      var ctx = bu.createCtx(['interval']);
+    manager.add(`${handler} handler catches errors`, testCase => {
+      testCase.mock([setName]);
+      var ctx = bu.createCtx([handler]);
       ctx.run(() => {
-        setInterval(() => {
+        global[setName](() => {
           var error = new Error('should be handled');
           //ensures that the error thrown was the intended error
           error.testing = true;
@@ -103,13 +110,13 @@ modules.tests = (function() {
       //ensures that the event was fired
       var checked = false;
 
-      ctx.handler('interval').on('error', event => {
+      ctx.handler(handler).on('error', event => {
         test.assert(event.error.testing);
         checked = true;
       });
 
       //begin environment emulation
-      for (var call of testCase.calls('setInterval')) {
+      for (var call of testCase.calls(setName)) {
         call.args[0].apply(null);
       }
       //end environment emulation
@@ -117,13 +124,13 @@ modules.tests = (function() {
       test.assert(checked);
     });
 
-    manager.add('setInterval handles parameter arguments', testCase => {
-      testCase.mock(['setInterval']);
+    manager.add(`${setName} handles parameter arguments`, testCase => {
+      testCase.mock([setName]);
 
-      var ctx = bu.createCtx(['interval']);
+      var ctx = bu.createCtx([handler]);
       var checked = false;
       ctx.run(() => {
-        setInterval((arg1, arg2) => {
+        global[setName]((arg1, arg2) => {
           test.assert(arg1 === 'foo');
           test.assert(arg2 === 'bar');
           checked = true;
@@ -131,7 +138,7 @@ modules.tests = (function() {
       });
 
       //begin environment emulation
-      for (var call of testCase.calls('setInterval')) {
+      for (var call of testCase.calls(setName)) {
         call.args[0].apply(null);
       }
       //end environment emulation
@@ -139,13 +146,13 @@ modules.tests = (function() {
       test.assert(checked);
     });
 
-    manager.add('setInterval fires add event', testCase => {
-      testCase.mock(['setInterval']);
+    manager.add(`${setName} fires add event`, testCase => {
+      testCase.mock([setName]);
 
-      var ctx = bu.createCtx(['interval']);
+      var ctx = bu.createCtx([handler]);
       var fired = false;
 
-      ctx.handler('interval').on('add', event => {
+      ctx.handler(handler).on('add', event => {
         test.assert(event.args[0] === 'testing');
         fired = true;
       });
@@ -153,36 +160,34 @@ modules.tests = (function() {
       var callback = () => {};
 
       ctx.run(() => {
-        setInterval(() => {}, 1000, 'testing');
+        global[setName](() => {}, 1000, 'testing');
       });
 
       test.assert(fired);
     });
 
-    manager.add('clearInterval fires remove event', testCase => {
-      testCase.mock(['setInterval', 'clearInterval']);
+    manager.add(`${clearName} fires remove event`, testCase => {
+      testCase.mock([setName, clearName]);
 
-      var ctx = bu.createCtx(['interval']);
+      var ctx = bu.createCtx([handler]);
       var id = null;
       var fired = false;
 
-      ctx.handler('interval').on('remove', event => {
+      ctx.handler(handler).on('remove', event => {
         test.assert(event.id === id);
         fired = true;
       });
 
       ctx.run(() => {
-        id = setInterval(() => {}, 1000);
-        clearInterval(id);
+        id = global[setName](() => {}, 1000);
+        global[clearName](id);
       });
 
       test.assert(fired);
     });
-
-    return manager;
   }
 
   return {
     createTests
   };
-})();
+})(this);

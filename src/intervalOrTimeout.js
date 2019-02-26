@@ -10,30 +10,26 @@
  *    error: the error thrown
  **/
 (function(global) {
-  function IntervalHandler() {
+  function IntervalOrTimeoutHandler(setName, clearName, eventBuilder) {
     var sup = bu.internal.GlobalExternalHandler();
-    var setIntervalOriginal = null;
+    var setOriginal = null;
+    var clearOriginal = null;
 
     return bu.internal.mixin(sup, {
       install() {
         sup.install();
-        setIntervalOriginal = global.setInterval;
-        clearIntervalOriginal = global.clearInterval;
+        setOriginal = global[setName];
+        clearOriginal = global[clearName];
         var self = this;
 
-        global.setInterval = function(func, period) {
+        global[setName] = function(func, period) {
           var ctx = bu.internal.getCurrCtx();
           var args = Array.prototype.slice.call(arguments, 2);
 
-          self.getSpecificHandler(ctx).fire({
-            name: 'add',
-            ctx,
-            func,
-            period,
-            args
-          });
+          var event = eventBuilder(ctx, func, period, args);
+          self.getSpecificHandler(ctx).fire(event);
 
-          return setIntervalOriginal.call(global, () => {
+          return setOriginal.call(global, () => {
             try {
               ctx.run(() => {
                 func.apply(this, args);
@@ -48,18 +44,40 @@
           }, period);
         };
 
-        global.clearInterval = id => {
+        global[clearName] = id => {
           var ctx = bu.internal.getCurrCtx();
           self.getSpecificHandler(ctx).fire({
             name: 'remove',
             ctx,
             id
           });
-          clearIntervalOriginal.call(global, id);
+          clearOriginal.call(global, id);
         };
       }
     });
   }
 
-  bu.internal.registerHandler('interval', IntervalHandler());
+  bu.internal.registerHandler('interval',
+      IntervalOrTimeoutHandler('setInterval', 'clearInterval',
+      (ctx, func, period, args) => {
+        return {
+          name: 'add',
+          ctx,
+          func,
+          period,
+          args
+        };
+      }));
+
+  bu.internal.registerHandler('timeout',
+      IntervalOrTimeoutHandler('setTimeout', 'clearTimeout',
+      (ctx, func, delay, args) => {
+        return {
+          name: 'add',
+          ctx,
+          func,
+          delay,
+          args
+        };
+      }));
 })(this);

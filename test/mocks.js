@@ -5,48 +5,33 @@
   var test = modules.test;
   var Mock = test.internal.Mock;
 
-  function SetIntervalMock() {
+  function BasicMock(name) {
     var sup = test.internal.Mock();
     var originalFunc = null;
 
     return bu.internal.mixin(sup, {
       setup() {
         sup.setup();
-        originalFunc = global.setInterval;
-        global.setInterval = (func, period) => {
+        originalFunc = global[name];
+        global[name] = function() {
           sup.calls().push({
-            args: [func, period]
+            args: Array.prototype.slice.call(arguments)
           });
         };
       },
       cleanup() {
         sup.cleanup();
-        global.setInterval = originalFunc;
+        global[name] = originalFunc;
       }
     });
   }
 
-  function ClearIntervalMock() {
-    var sup = test.internal.Mock();
-    var originalFunc = null;
-
-    return bu.internal.mixin(sup, {
-      setup() {
-        sup.setup();
-        originalFunc = global.clearInterval;
-        global.clearInterval = id => {
-          sup.calls().push({
-            args: [id]
-          });
-        };
-      },
-      cleanup() {
-        sup.cleanup();
-        global.clearInterval = originalFunc;
-      }
-    });
+  function registerBasicMock(name) {
+    test.internal.registerMock(name, BasicMock(name));
   }
 
-  test.internal.registerMock('setInterval', SetIntervalMock());
-  test.internal.registerMock('clearInterval', ClearIntervalMock());
+  registerBasicMock('setInterval');
+  registerBasicMock('clearInterval');
+  registerBasicMock('setTimeout');
+  registerBasicMock('clearTimeout');
 })(this);
