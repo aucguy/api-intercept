@@ -2,6 +2,71 @@ var modules = modules || {};
 modules.tests = (function(global) {
   var test = modules.test;
 
+  /**
+   * Calls the browser API under the given context.
+   *
+   * @param ctx the execution context to run the API under
+   * @param obj the object on which the API is defined
+   * @param name the property name of the API on obj
+   * @param args an array of arguments passed to the API
+   **/
+  function callAPI(ctx, obj, name, args) {
+    var ret = null;
+    ctx.run(() => {
+      ret = obj[name].apply(obj, args);
+    });
+    return ret;
+  }
+
+  /**
+   * Throws a specially marked error that designates it for testing
+   **/
+  function throwTestingError() {
+    var error = new Error('should be handled');
+    //ensures that the error thrown was the intended error
+    error.testing = true;
+    throw (error);
+  }
+
+  /**
+   * Takes the intercepted calls from mocks and calls the callbacks.
+   *
+   * @param testCase the Test Case instance
+   * @param mock the API to which the callbacks were passed
+   * @param cbIndex the argument index of the callbacks in the arugments. 
+   *    defaults to 0.
+   **/
+  function callCallbacks(testCase, mock, cbIndex) {
+    cbIndex = cbIndex || 0;
+
+    for (var call of testCase.calls(mock)) {
+      call.args[cbIndex].apply(null);
+    }
+  }
+
+  /**
+   * Ensures that an event occurs under a given context.
+   * The return value is supposed to be called after the test completes.
+   * 
+   * @param ctx the Execution Context.
+   * @param handler the handler for which the event occurs
+   * @param name the name of the event to check for
+   * @param onEvent optional. Called when the event occurs
+   * @return a function that throws if the event has not occured yet.
+   **/
+  function ensureEventOccurs(ctx, handler, name, onEvent) {
+    onEvent = onEvent || (() => undefined);
+    var occurred = false;
+    ctx.handler(handler).on(name, event => {
+      onEvent(event);
+      occurred = true;
+    });
+
+    return () => {
+      test.assert(occurred);
+    };
+  }
+
   function createTests() {
     var manager = test.createManager();
 
@@ -83,108 +148,192 @@ modules.tests = (function(global) {
       });
     });
 
-    intervalOrTimeout(manager, 'setInterval', 'clearInterval', 'interval');
-    intervalOrTimeout(manager, 'setTimeout', 'clearTimeout', 'timeout');
+    /**
+     * Ensures that the handler fires an error event when the callback throws.
+     *
+     * @param options.handler the name of the handler
+     * @param options.obj the object under which the API that 'adds' a
+     *    callback is defined
+     * @param options.addName the name of the API which 'adds' a callback
+     * @param options.addArgs optional. The arguments passed to the 'add' API
+     * @param options.cbIndex optional. Specifies which argument is the callback
+     **/
+    function handlerFiresErrorEvent(options) {
+      options = bu.internal.mixin({
+        obj: global,
+        addArgs: [throwTestingError, 1000],
+        cbIndex: null
+      }, options);
 
-    return manager;
-  }
+      manager.add(`${options.handler} handler catches errors`, testCase => {
+        testCase.mock([options.addName]);
+        var ctx = bu.createCtx([options.handler]);
 
-  function intervalOrTimeout(manager, setName, clearName, handler) {
-    /*
-     * Ensures that a error thrown by the callback passed to setInterval
-     * fires an error event on the context under which setInterval was
-     * called.
-     */
-    manager.add(`${handler} handler catches errors`, testCase => {
-      testCase.mock([setName]);
-      var ctx = bu.createCtx([handler]);
-      ctx.run(() => {
-        global[setName](() => {
-          var error = new Error('should be handled');
-          //ensures that the error thrown was the intended error
-          error.testing = true;
-          throw (error);
-        }, 1000);
+        callAPI(ctx, options.obj, options.addName, options.addArgs);
+
+        var after = ensureEventOccurs(ctx, options.handler, 'error', event => {
+          test.assert(event.error.testing);
+        });
+
+        callCallbacks(testCase, options.addName, options.cbIndex);
+        after();
       });
+    }
 
-      //ensures that the event was fired
-      var checked = false;
-
-      ctx.handler(handler).on('error', event => {
-        test.assert(event.error.testing);
-        checked = true;
-      });
-
-      //begin environment emulation
-      for (var call of testCase.calls(setName)) {
-        call.args[0].apply(null);
-      }
-      //end environment emulation
-
-      test.assert(checked);
+    handlerFiresErrorEvent({
+      handler: 'interval',
+      addName: 'setInterval'
+    });
+    handlerFiresErrorEvent({
+      handler: 'timeout',
+      addName: 'setTimeout'
+    });
+    handlerFiresErrorEvent({
+      handler: 'eventListener',
+      obj: new Image(),
+      addName: 'addEventListener',
+      addArgs: ['onload', throwTestingError],
+      cbIndex: 1
     });
 
-    manager.add(`${setName} handles parameter arguments`, testCase => {
-      testCase.mock([setName]);
+    /**
+     * Ensures that the handler fires an add event when the API is called.
+     *
+     * @param options.handler the name of the handler
+     * @param options.obj the object under which the API that 'adds' a
+     *    callback is defined
+     * @param options.addName the name of the API which 'adds' a callback
+     * @param options.addArgs optional. The arguments passed to the 'add' API
+     * @param options.predicate optional. A function that takes the add event.
+     *    If the function returns false, the test fails.
+     **/
+    function handlerFiresAddEvent(options) {
+      options = bu.internal.mixin({
+        obj: global,
+        addArgs: [() => undefined, 1000, 'testing'],
+        predicate: event => event.args[0] === 'testing'
+      }, options);
 
-      var ctx = bu.createCtx([handler]);
-      var checked = false;
-      ctx.run(() => {
-        global[setName]((arg1, arg2) => {
+      manager.add(`${options.addName} fires add event`, testCase => {
+        testCase.mock([options.addName]);
+        var ctx = bu.createCtx([options.handler]);
+
+        var after = ensureEventOccurs(ctx, options.handler, 'add', event => {
+          test.assert(options.predicate(event));
+        });
+
+        callAPI(ctx, options.obj, options.addName, options.addArgs);
+        after();
+      });
+    }
+
+    handlerFiresAddEvent({
+      handler: 'interval',
+      addName: 'setInterval'
+    });
+    handlerFiresAddEvent({
+      handler: 'timeout',
+      addName: 'setTimeout'
+    });
+    handlerFiresAddEvent({
+      handler: 'eventListener',
+      obj: new Image(),
+      addName: 'addEventListener',
+      addArgs: ['testing', () => undefined],
+      predicate: event => event.listenerName === 'testing'
+    });
+
+    /**
+     * Ensures that the handler fires a remove event when the callback is removed.
+     *
+     * @param options.handler the name of the handler
+     * @param options.obj the object under which the API that 'adds' a
+     *    callback is defined
+     * @param options.addName the name of the API which 'adds' a callback
+     * @param options.addArgs optional. The arguments passed to the 'add' API
+     * @param options.removeName the name of the API which 'removes' a callback
+     * @param options.removeArgs optional. The arguments passed to the 'remove' API
+     * @param options.predicate optional. A function that takes the remove event.
+     *    If the function returns false, the test fails.
+     **/
+    function handlerFiresRemoveEvent(options) {
+      options = bu.internal.mixin({
+        obj: global,
+        predicate: (ret, event) => event.id === ret,
+        addArgs: [() => {}, 1000],
+        removeArgs: ret => [ret]
+      }, options);
+
+      manager.add(`${options.removeName} fires remove event`, testCase => {
+        testCase.mock([options.addName, options.removeName]);
+        var ctx = bu.createCtx([options.handler]);
+
+        var after = ensureEventOccurs(ctx, options.handler, 'remove', event => {
+          test.assert(options.predicate(ret, event));
+        });
+
+        var ret = callAPI(ctx, options.obj, options.addName, options.addArgs);
+        callAPI(ctx, options.obj, options.removeName, options.removeArgs(ret));
+        after();
+      });
+    }
+
+    handlerFiresRemoveEvent({
+      handler: 'interval',
+      addName: 'setInterval',
+      removeName: 'clearInterval'
+    });
+    handlerFiresRemoveEvent({
+      handler: 'timeout',
+      addName: 'setTimeout',
+      removeName: 'clearTimeout'
+    });
+
+    var args = ['testing', () => {}];
+    handlerFiresRemoveEvent({
+      handler: 'eventListener',
+      obj: new Image(),
+      addName: 'addEventListener',
+      addArgs: args,
+      removeName: 'removeEventListener',
+      removeArgs: ret => args,
+      predicate: (ret, event) => event.listenerName === 'testing'
+    });
+
+    /**
+     * Ensures that the handler passes the extra arguments to the callback.
+     *
+     * @param options.handler the name of the handler
+     * @param options.addName the name of the API which 'adds' a callback
+     **/
+    function handlerPassesArguments(options) {
+      manager.add(`${options.addName} passes arguments`, testCase => {
+        testCase.mock([options.addName]);
+        var ctx = bu.createCtx([options.handler]);
+
+        var checked = false;
+
+        callAPI(ctx, global, options.addName, [(arg1, arg2) => {
           test.assert(arg1 === 'foo');
           test.assert(arg2 === 'bar');
           checked = true;
-        }, 1000, 'foo', 'bar');
+        }, 1000, 'foo', 'bar']);
+
+        callCallbacks(testCase, options.addName);
+        test.assert(checked);
       });
+    }
 
-      //begin environment emulation
-      for (var call of testCase.calls(setName)) {
-        call.args[0].apply(null);
-      }
-      //end environment emulation
-
-      test.assert(checked);
+    handlerPassesArguments({
+      handler: 'interval',
+      addName: 'setInterval'
+    });
+    handlerPassesArguments({
+      handler: 'timeout',
+      addName: 'setTimeout'
     });
 
-    manager.add(`${setName} fires add event`, testCase => {
-      testCase.mock([setName]);
-
-      var ctx = bu.createCtx([handler]);
-      var fired = false;
-
-      ctx.handler(handler).on('add', event => {
-        test.assert(event.args[0] === 'testing');
-        fired = true;
-      });
-
-      var callback = () => {};
-
-      ctx.run(() => {
-        global[setName](() => {}, 1000, 'testing');
-      });
-
-      test.assert(fired);
-    });
-
-    manager.add(`${clearName} fires remove event`, testCase => {
-      testCase.mock([setName, clearName]);
-
-      var ctx = bu.createCtx([handler]);
-      var id = null;
-      var fired = false;
-
-      ctx.handler(handler).on('remove', event => {
-        test.assert(event.id === id);
-        fired = true;
-      });
-
-      ctx.run(() => {
-        id = global[setName](() => {}, 1000);
-        global[clearName](id);
-      });
-
-      test.assert(fired);
-    });
+    return manager;
   }
 
   return {
