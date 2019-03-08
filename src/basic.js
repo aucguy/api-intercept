@@ -67,55 +67,5 @@
     });
   }
 
-  bu.internal.registerHandler('interval', BasicHandler({
-    addName: 'setInterval',
-    removeName: 'clearInterval',
-    addEvent: (ctx, args) => {
-      return {
-        name: 'add',
-        ctx,
-        func: args[0],
-        period: args[1],
-        args: Array.prototype.slice.call(args, 2)
-      };
-    }
-  }));
-
-  bu.internal.registerHandler('timeout', BasicHandler({
-    addName: 'setTimeout',
-    removeName: 'clearTimeout',
-    addEvent: (ctx, args) => {
-      return {
-        name: 'add',
-        ctx,
-        func: args[0],
-        delay: args[1],
-        args: Array.prototype.slice.call(args, 2)
-      };
-    }
-  }));
-
-  bu.internal.registerHandler('eventListener', BasicHandler({
-    obj: Element.prototype,
-    addName: 'addEventListener',
-    removeName: 'removeEventListener',
-    addEvent: (ctx, args) => {
-      return {
-        name: 'add',
-        ctx,
-        listenerName: args[0],
-        func: args[1]
-      };
-    },
-    addArgs: (self, args, cb) => [self, args[0], cb],
-    removeEvent: (ctx, args) => {
-      return {
-        ctx,
-        name: 'remove',
-        listenerName: args[0],
-        func: args[1]
-      };
-    },
-    func: args => args[1]
-  }));
+  bu.internal.BasicHandler = BasicHandler;
 })(this);

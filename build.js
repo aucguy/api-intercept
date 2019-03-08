@@ -62,6 +62,20 @@ function writeFileMkdirsSync(filename, contents) {
   fs.writeFileSync(filename, contents);
 }
 
+function mergeArrays(a, b) {
+  return a.concat(b.filter(x => !a.includes(x)));
+}
+
+function getDependencies(dependencies, plugin) {
+  var modules = [];
+  if(dependencies.hasOwnProperty(plugin)) {
+    for(var dep of dependencies[plugin]) {
+      modules = mergeArrays(modules, getDependencies(dependencies, dep));
+    }
+  }
+  return mergeArrays(modules, [plugin]);
+}
+
 const commands = {
   /**
    * runs jshint on the project.
@@ -101,24 +115,30 @@ const commands = {
    * builds the project
    **/
   build(args) {
-    var plugins;
-    if(args.properties.plugins !== undefined) {
-      plugins = args.properties.plugins.split(',')
-        .map(x => path.join('src', x) + '.js');
-      var notFound = plugins.filter(x => !fs.existsSync(x));
-      if(notFound.length !== 0) {
-        console.error(`could not find plugin(s) ${notFound.join(', ')}`);
-        return;
-      }
-    } else {
-      plugins = [];
+    if(args.properties.plugins === undefined) {
+      console.error('plugins not specified');
+      return;
     }
     
-    var code = ['src/core.js'].concat(plugins)
-      .map(x => fs.readFileSync(x, {
+    var dependencies = JSON.parse(fs.readFileSync('dependencies.json', {
+      encoding: 'utf-8'
+    }));
+    
+    var plugins = []
+    for(var plugin of args.properties.plugins.split(',')) {
+      plugins = mergeArrays(plugins, getDependencies(dependencies, plugin));
+    }
+        
+    var pluginFiles = plugins.map(x => path.join('src', x) + '.js');
+    var notFound = pluginFiles.filter(x => !fs.existsSync(x));
+    if(notFound.length !== 0) {
+      console.error(`could not find plugin(s) ${notFound.join(', ')}`);
+      return;
+    }
+    
+    var code = pluginFiles.map(x => fs.readFileSync(x, {
         encoding: 'utf-8'
-      }))
-      .join('\n\r');
+      })).join('\n\r');
       
     code = babel.transformSync(code, {
       presets: ['@babel/preset-env']

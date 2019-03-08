@@ -1,0 +1,6 @@
+{
+  "interval": ["basic"],
+  "timeout": ["basic"],
+  "eventListener": ["basic"],
+  "basic": ["core"]
+}
