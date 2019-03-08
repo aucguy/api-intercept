@@ -333,6 +333,29 @@ modules.tests = (function(global) {
       addName: 'setTimeout'
     });
 
+    manager.add('eventListener passes extra arguments to the API', testCase => {
+      testCase.mock(['addEventListener', 'removeEventListener']);
+      var ctx = bu.createCtx(['eventListener']);
+      var image = new Image();
+      var extra = {
+        once: true
+      };
+
+      callAPI(ctx, image, 'addEventListener',
+        ['load', () => {}, extra]);
+
+      callAPI(ctx, image, 'removeEventListener',
+        ['load', () => {}, extra]);
+
+      for (var call of testCase.calls('addEventListener')) {
+        test.assert(call.args[2] === extra);
+      }
+
+      for (call of testCase.calls('removeEventListener')) {
+        test.assert(call.args[2] === extra);
+      }
+    });
+
     return manager;
   }
 

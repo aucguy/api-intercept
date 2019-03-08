@@ -11,7 +11,8 @@
         func: args[1]
       };
     },
-    addArgs: (self, args, cb) => [self, args[0], cb],
+    addArgs: (self, args, cb) => [self, args[0], cb]
+      .concat(Array.prototype.slice.call(args, 2)),
     removeEvent: (ctx, args) => {
       return {
         ctx,
