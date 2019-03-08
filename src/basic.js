@@ -19,7 +19,8 @@
         name: 'remove',
         id: args[0]
       }),
-      func: args => args[0]
+      func: args => args[0],
+      params: args => Array.prototype.slice.call(args, 2)
     }, options);
 
     var sup = bu.internal.GlobalExternalHandler();
@@ -40,7 +41,7 @@
           self.getSpecificHandler(ctx).fire(event);
 
           var func = options.func(arguments);
-          var params = Array.prototype.slice.call(arguments, 2);
+          var params = options.params(arguments);
 
           var args = options.addArgs(this, arguments, () => {
             try {

@@ -356,6 +356,22 @@ modules.tests = (function(global) {
       }
     });
 
+    manager.add('addEventListener does not pass extra arguments to the callback', testCase => {
+      testCase.mock(['addEventListener']);
+      var ctx = bu.createCtx(['eventListener']);
+      var image = new Image();
+
+      var checked = false;
+
+      callAPI(ctx, image, 'addEventListener', ['load', x => {
+        test.assert(x === undefined);
+        checked = true;
+      }, 1]);
+
+      callCallbacks(testCase, 'addEventListener', 1);
+      test.assert(checked);
+    });
+
     return manager;
   }
 

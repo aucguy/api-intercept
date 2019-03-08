@@ -21,6 +21,7 @@
         func: args[1]
       };
     },
-    func: args => args[1]
+    func: args => args[1],
+    params: args => []
   }));
 })();
