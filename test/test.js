@@ -39,8 +39,9 @@ modules.test = (function(global) {
       run() {
         var fails = [];
         for (var test of tests) {
+          var testCase;
           try {
-            var testCase = TestCase();
+            testCase = TestCase();
             test.func(testCase);
           } catch (error) {
             fails.push({
