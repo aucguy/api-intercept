@@ -2,5 +2,7 @@
   "interval": ["basic"],
   "timeout": ["basic"],
   "eventListener": ["basic"],
-  "basic": ["core"]
+  "basic": ["basicAdd", "basicRemove", "core"],
+  "basicAdd": ["core"],
+  "basicRemove": ["core"]
 }
