@@ -195,6 +195,11 @@ modules.tests = (function(global) {
       addArgs: ['onload', throwTestingError],
       cbIndex: 1
     });
+    handlerFiresErrorEvent({
+      handler: 'requestAnimationFrame',
+      addName: 'requestAnimationFrame',
+      addArgs: [throwTestingError]
+    });
 
     /**
      * Ensures that the handler fires an add event when the API is called.
@@ -241,6 +246,15 @@ modules.tests = (function(global) {
       addName: 'addEventListener',
       addArgs: ['testing', () => undefined],
       predicate: event => event.listenerName === 'testing'
+    });
+
+    var cb = () => undefined;
+    cb.testing = true;
+    handlerFiresAddEvent({
+      handler: 'requestAnimationFrame',
+      addName: 'requestAnimationFrame',
+      addArgs: [cb],
+      predicate: event => event.func.testing === true
     });
 
     /**
@@ -356,20 +370,47 @@ modules.tests = (function(global) {
       }
     });
 
-    manager.add('addEventListener does not pass extra arguments to the callback', testCase => {
-      testCase.mock(['addEventListener']);
-      var ctx = bu.createCtx(['eventListener']);
-      var image = new Image();
+    /**
+     * Ensures that the handler does not pass extra arguments to the callback
+     *
+     * @param options.handler the name of the handler
+     * @param options.obj the object under which the API that 'adds' a
+     *    callback is defined
+     * @param options.addName the name of the API which 'adds' a callback
+     * @param options.addArgs The arguments passed to the 'add' API
+     * @param options.cbIndex Specifies which argument is the callback
+     **/
+    function handlerDoesNotPassExtraArgs(options) {
+      manager.add(`${options.addName} does not pass extra arguments to the callback`, testCase => {
+        testCase.mock([options.addName]);
+        var ctx = bu.createCtx([options.handler]);
 
-      var checked = false;
+        var checked = false;
 
-      callAPI(ctx, image, 'addEventListener', ['load', x => {
-        test.assert(x === undefined);
-        checked = true;
-      }, 1]);
+        callAPI(ctx, options.obj, options.addName, options.addArgs(x => {
+          test.assert(x === undefined);
+          checked = true;
+        }));
 
-      callCallbacks(testCase, 'addEventListener', 1);
-      test.assert(checked);
+        callCallbacks(testCase, options.addName, options.cbIndex);
+        test.assert(checked);
+      });
+    }
+
+    handlerDoesNotPassExtraArgs({
+      handler: 'eventListener',
+      obj: new Image(),
+      addName: 'addEventListener',
+      addArgs: cb => ['load', cb, 123],
+      cbIndex: 1
+    });
+
+    handlerDoesNotPassExtraArgs({
+      handler: 'requestAnimationFrame',
+      obj: global,
+      addName: 'requestAnimationFrame',
+      addArgs: cb => [cb, 123],
+      cbIndex: 0
     });
 
     return manager;

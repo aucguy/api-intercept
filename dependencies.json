@@ -2,6 +2,7 @@
   "interval": ["basic"],
   "timeout": ["basic"],
   "eventListener": ["basic"],
+  "requestAnimationFrame": ["basicAdd"],
   "basic": ["basicAdd", "basicRemove", "core"],
   "basicAdd": ["core"],
   "basicRemove": ["core"]

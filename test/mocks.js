@@ -52,4 +52,5 @@
   registerBasicMock(global, 'clearTimeout');
   registerBasicMock(Element.prototype, 'addEventListener');
   registerBasicMock(Element.prototype, 'removeEventListener');
+  registerBasicMock(global, 'requestAnimationFrame');
 })(this);
