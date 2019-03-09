@@ -13,33 +13,37 @@ const beautify = require('js-beautify');
  **/
 function walk(directory) {
   var contents = [];
-  for(var file of fs.readdirSync(directory)) {
+  for (var file of fs.readdirSync(directory)) {
     var name = path.join(directory, file);
     var stat = fs.lstatSync(name);
-    if(stat.isDirectory()) {
+    if (stat.isDirectory()) {
       contents = contents.concat(walk(name));
-    } else if(stat.isFile()) {
+    } else if (stat.isFile()) {
       contents.push(name);
     }
   }
   return contents;
 }
 
+function copyFile(src, dst) {
+  fs.writeFileSync(dst, fs.readFileSync(src));
+}
+
 /**
  * copies the directory src to dst
  **/
 function copyDir(src, dst) {
-  if(!fs.existsSync(dst)) {
+  if (!fs.existsSync(dst)) {
     mkdirsSync(dst);
   }
-  for(var file of fs.readdirSync(src)) {
+  for (var file of fs.readdirSync(src)) {
     var srcName = path.join(src, file);
     var dstName = path.join(dst, file);
     var stat = fs.lstatSync(srcName);
-    if(stat.isDirectory()) {
+    if (stat.isDirectory()) {
       copyDir(srcName, dstName);
-    } else if(stat.isFile()) {
-      fs.writeFileSync(dstName, fs.readFileSync(srcName));
+    } else if (stat.isFile()) {
+      copyFile(srcName, dstName);
     }
   }
 }
@@ -48,7 +52,7 @@ function copyDir(src, dst) {
  * creates the directory and all parent directories
  **/
 function mkdirsSync(directory) {
-  if(!fs.existsSync(directory)) {
+  if (!fs.existsSync(directory)) {
     mkdirsSync(path.dirname(directory));
     fs.mkdirSync(directory);
   }
@@ -68,8 +72,8 @@ function mergeArrays(a, b) {
 
 function getDependencies(dependencies, plugin) {
   var modules = [];
-  if(dependencies.hasOwnProperty(plugin)) {
-    for(var dep of dependencies[plugin]) {
+  if (dependencies.hasOwnProperty(plugin)) {
+    for (var dep of dependencies[plugin]) {
       modules = mergeArrays(modules, getDependencies(dependencies, dep));
     }
   }
@@ -81,28 +85,32 @@ const commands = {
    * runs jshint on the project.
    **/
   lint(args) {
-    child_process.exec(`jshint src/ test/ --reporter ${jshintHtmlReporter} > jshint.html`);
+    child_process.exec(`jshint src/ test/ build.js --reporter ${jshintHtmlReporter} > jshint.html`);
   },
   /**
    * formats the code. Also backs up the code before formating.
    **/
   format(args) {
+    var file;
     var num = 0;
-    if(fs.existsSync('backup')) {
-      for(var file of fs.readdirSync('backup')) {
-        if(file.match(/[0-9]+/)) {
+    if (fs.existsSync('backup')) {
+      for (file of fs.readdirSync('backup')) {
+        if (file.match(/[0-9]+/)) {
           num = Math.max(num, parseInt(file));
         }
       }
       num++;
     }
-    copyDir('src', path.join('backup', num.toString(), 'src'));
-    copyDir('test', path.join('backup', num.toString(), 'test'));
-    
+
+    var backupDir = path.join('backup', num.toString());
+    copyDir('src', path.join(backupDir, 'src'));
+    copyDir('test', path.join(backupDir, 'test'));
+    copyFile('build.js', path.join(backupDir, 'build.js'));
+
     var config = JSON.parse(fs.readFileSync('.jsbeautifyrc'));
-    
-    for(var file of walk('src').concat(walk('test'))) {
-      if(path.extname(file) === '.js') {
+
+    for (file of ['build.js'].concat(walk('src')).concat(walk('test'))) {
+      if (path.extname(file) === '.js') {
         var data = fs.readFileSync(file, {
           encoding: 'utf-8'
         });
@@ -115,50 +123,50 @@ const commands = {
    * builds the project
    **/
   build(args) {
-    if(args.properties.plugins === undefined) {
+    if (args.properties.plugins === undefined) {
       console.error('plugins not specified');
       return;
     }
-    
+
     var dependencies = JSON.parse(fs.readFileSync('dependencies.json', {
       encoding: 'utf-8'
     }));
-    
+
     var plugins = args.properties.plugins.split(',');
     var notFound = plugins.filter(x => !dependencies.hasOwnProperty(x));
-    
-    if(notFound.length !== 0) {
+
+    if (notFound.length !== 0) {
       console.error(`could not find plugin(s) ${notFound.join(', ')}`);
       return;
     }
-    
+
     var modules = [];
-    for(var plugin of plugins) {
+    for (var plugin of plugins) {
       modules = mergeArrays(modules, getDependencies(dependencies, plugin));
     }
-        
+
     var moduleFiles = modules.map(x => path.join('src', x) + '.js')
       .filter(x => fs.existsSync(x));
-    
+
     var code = moduleFiles.map(x => fs.readFileSync(x, {
-        encoding: 'utf-8'
-      })).join('\n\r');
-      
+      encoding: 'utf-8'
+    })).join('\n\r');
+
     code = babel.transformSync(code, {
       presets: ['@babel/preset-env']
     }).code;
-    
-    if(!args.flags.includes('nocompress')) {
+
+    if (!args.flags.includes('nocompress')) {
       var uglified = uglify.minify(code);
-      if(code.error) {
+      if (code.error) {
         console.error(code.error);
         return;
       }
-      var code = uglified.code;
+      code = uglified.code;
     }
-    
+
     var output;
-    if(args.properties.output !== undefined) {
+    if (args.properties.output !== undefined) {
       output = path.join('build', args.properties.output);
     } else {
       output = 'build/output.min.js';
@@ -182,21 +190,21 @@ function parseArgs(args) {
     properties: {},
     ordered: []
   };
-  for(var i = 2; i < args.length; i++) {
+  for (var i = 2; i < args.length; i++) {
     var arg = args[i];
     //property
-    if(arg.match(/^--[a-zA-Z]+=/)) {
+    if (arg.match(/^--[a-zA-Z]+=/)) {
       var [key, value] = arg.slice(2).split('=', 2);
-      
+
       //check for enclosing quotes
-      if(value.startsWith('"') && value.endsWith('"')) {
+      if (value.startsWith('"') && value.endsWith('"')) {
         value = value.slice(1, value.length - 1);
       }
       parsed.properties[key] = value;
-    //flag
-    } else if(arg.match(/^--[a-zA-Z]+/)) {
+      //flag
+    } else if (arg.match(/^--[a-zA-Z]+/)) {
       parsed.flags.push(arg.slice(2));
-    //ordered
+      //ordered
     } else {
       parsed.ordered.push(arg);
     }
@@ -206,12 +214,12 @@ function parseArgs(args) {
 
 function main() {
   var args = parseArgs(process.argv);
-  if(args.ordered.length === 0) {
+  if (args.ordered.length === 0) {
     console.error('no command specified');
     return;
   }
   var command = args.ordered[0];
-  if(!(args.ordered[0] in commands)) {
+  if (!(args.ordered[0] in commands)) {
     console.error(`unknown command: ${command}`);
     return;
   }
