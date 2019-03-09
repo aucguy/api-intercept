@@ -212,4 +212,4 @@ var bu = (function(global) {
       registerHandler
     }
   };
-})(this);
+})(window);

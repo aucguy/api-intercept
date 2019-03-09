@@ -1,4 +1,5 @@
 {
+  "all": ["interval", "timeout", "eventListener", "requestAnimationFrame"],
   "interval": ["basic"],
   "timeout": ["basic"],
   "eventListener": ["basic"],

@@ -24,4 +24,4 @@
   }
 
   bu.internal.BasicHandler = BasicHandler;
-})(this);
+})(window);

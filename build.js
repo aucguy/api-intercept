@@ -124,19 +124,23 @@ const commands = {
       encoding: 'utf-8'
     }));
     
-    var plugins = []
-    for(var plugin of args.properties.plugins.split(',')) {
-      plugins = mergeArrays(plugins, getDependencies(dependencies, plugin));
-    }
-        
-    var pluginFiles = plugins.map(x => path.join('src', x) + '.js');
-    var notFound = pluginFiles.filter(x => !fs.existsSync(x));
+    var plugins = args.properties.plugins.split(',');
+    var notFound = plugins.filter(x => !dependencies.hasOwnProperty(x));
+    
     if(notFound.length !== 0) {
       console.error(`could not find plugin(s) ${notFound.join(', ')}`);
       return;
     }
     
-    var code = pluginFiles.map(x => fs.readFileSync(x, {
+    var modules = [];
+    for(var plugin of plugins) {
+      modules = mergeArrays(modules, getDependencies(dependencies, plugin));
+    }
+        
+    var moduleFiles = modules.map(x => path.join('src', x) + '.js')
+      .filter(x => fs.existsSync(x));
+    
+    var code = moduleFiles.map(x => fs.readFileSync(x, {
         encoding: 'utf-8'
       })).join('\n\r');
       
