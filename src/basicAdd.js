@@ -10,8 +10,8 @@
    * @param options.func optional. A function that takes the arguments passed
    *    to the API and returns the callback
    * @param options.params optional. A function that takes the arguments passed
-        to the API and returns the arguments that should be passed to the
-        callback
+        to the API and the callback. Returns the arguments that should be
+        passed to the callback
    * @param options.addEvent A function that takes the current context and the
         arguments passed to the API and returns the add event to be fired
    **/
@@ -20,7 +20,7 @@
       obj: global,
       addArgs: (self, args, cb) => [global, cb, args[0]],
       func: args => args[0],
-      params: args => Array.prototype.slice.call(args, 2)
+      params: (apiArgs, cbArgs) => Array.prototype.slice.call(apiArgs, 2)
     }, options);
 
     var addOriginal = null;
@@ -33,17 +33,18 @@
 
         options.obj[options.addName] = function() {
           var ctx = bu.internal.getCurrCtx();
+          var apiArgs = arguments;
 
-          var event = options.addEvent(ctx, arguments);
+          var event = options.addEvent(ctx, apiArgs);
           self.getSpecificHandler(ctx).fire(event);
 
-          var func = options.func(arguments);
-          var params = options.params(arguments);
+          var func = options.func(apiArgs);
 
-          var args = options.addArgs(this, arguments, () => {
+          var args = options.addArgs(this, arguments, function() {
+            var cbArgs = arguments;
             try {
               ctx.run(() => {
-                func.apply(this, params);
+                func.apply(this, options.params(apiArgs, cbArgs));
               });
             } catch (error) {
               self.getSpecificHandler(ctx).fire({

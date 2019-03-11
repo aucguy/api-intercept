@@ -35,12 +35,14 @@ modules.tests = (function(global) {
    * @param mock the API to which the callbacks were passed
    * @param cbIndex the argument index of the callbacks in the arugments. 
    *    defaults to 0.
+   * @param args the arguments to be passed to each callback. defaults to [].
    **/
-  function callCallbacks(testCase, mock, cbIndex) {
+  function callCallbacks(testCase, mock, cbIndex, args) {
     cbIndex = cbIndex || 0;
+    args = args || [];
 
     for (var call of testCase.calls(mock)) {
-      call.args[cbIndex].apply(null);
+      call.args[cbIndex].apply(null, args);
     }
   }
 
@@ -405,12 +407,19 @@ modules.tests = (function(global) {
       cbIndex: 1
     });
 
-    handlerDoesNotPassExtraArgs({
-      handler: 'requestAnimationFrame',
-      obj: global,
-      addName: 'requestAnimationFrame',
-      addArgs: cb => [cb, 123],
-      cbIndex: 0
+    manager.add('requestAnimationFrame passes time to the callback', testCase => {
+      testCase.mock(['requestAnimationFrame']);
+      var ctx = bu.createCtx(['requestAnimationFrame']);
+
+      var checked = false;
+
+      callAPI(ctx, global, 'requestAnimationFrame', [x => {
+        test.assert(x === 0);
+        checked = true;
+      }]);
+
+      callCallbacks(testCase, 'requestAnimationFrame', undefined, [0]);
+      test.assert(checked);
     });
 
     return manager;

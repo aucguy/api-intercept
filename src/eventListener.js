@@ -22,6 +22,6 @@
       };
     },
     func: args => args[1],
-    params: args => []
+    params: (apiArgs, cbArgs) => []
   }));
 })();
