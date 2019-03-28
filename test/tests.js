@@ -33,7 +33,7 @@ modules.tests = (function(global) {
    *
    * @param testCase the Test Case instance
    * @param mock the API to which the callbacks were passed
-   * @param cbIndex the argument index of the callbacks in the arugments. 
+   * @param cbIndex the argument index of the callbacks in the arguments.
    *    defaults to 0.
    * @param args the arguments to be passed to each callback. defaults to [].
    **/
@@ -54,10 +54,13 @@ modules.tests = (function(global) {
    * @param handler the handler for which the event occurs
    * @param name the name of the event to check for
    * @param onEvent optional. Called when the event occurs
-   * @return a function that throws if the event has not occured yet.
+   * @param negate optional, defaults to false. If true the test will fail if
+   *      the event does occur.
+   * @return a function that throws if the event has not occurred yet.
    **/
-  function ensureEventOccurs(ctx, handler, name, onEvent) {
+  function ensureEventOccurs(ctx, handler, name, onEvent, negate) {
     onEvent = onEvent || (() => undefined);
+    negate = negate || false;
     var occurred = false;
     ctx.handler(handler).on(name, event => {
       onEvent(event);
@@ -65,8 +68,23 @@ modules.tests = (function(global) {
     });
 
     return () => {
-      test.assert(occurred);
+      if (negate) {
+        test.assert(!occurred);
+      } else {
+        test.assert(occurred);
+      }
     };
+  }
+
+  /**
+   * Executes the normally asynchronous promise methods and constructors.
+   *
+   * @param testCase the Test Case instance
+   **/
+  function callHandlers(testCase) {
+    for (var call of testCase.calls('promise')) {
+      call.callback();
+    }
   }
 
   function createTests() {
@@ -421,6 +439,73 @@ modules.tests = (function(global) {
       callCallbacks(testCase, 'requestAnimationFrame', undefined, [0]);
       test.assert(checked);
     });
+
+    /**
+     * Ensures that error events are triggered under the right circumstances
+     * for promises.
+     *
+     * @param name the name of the test
+     * @param factory a function that returns a promise that either should or
+     *    should not generate an error event.
+     * @param shouldError whether or not the promise should generate an error
+     *    event.
+     **/
+    function promiseErrorTest(name, factory, shouldError) {
+      manager.add(name, testCase => {
+        testCase.mock(['promise']);
+        var ctx = bu.createCtx(['promise']);
+
+        var after = ensureEventOccurs(ctx, 'promise', 'error', undefined, shouldError);
+        ctx.run(factory);
+        callHandlers(testCase);
+        after();
+      });
+    }
+
+    promiseErrorTest('constructed promise without catch fires error event', () => {
+      new Promise((resolve, reject) => {
+        reject();
+      });
+    }, false);
+
+    promiseErrorTest('promise with then fires error event', () => {
+      new Promise((resolve, reject) => {
+        reject();
+      }).then(() => {});
+    }, false);
+
+    promiseErrorTest('promise with throwing then fires error event', () => {
+      new Promise((resolve, reject) => {
+        resolve();
+      }).then((resolve, reject) => {
+        reject();
+      });
+    }, false);
+
+    promiseErrorTest('promise with catch does not fire error event', () => {
+      new Promise((resolve, reject) => {
+        reject();
+      }).catch(() => {});
+    }, true);
+
+    promiseErrorTest('promise with reject callback for then does not fire error event', () => {
+      new Promise((resolve, reject) => {
+        reject();
+      }).then(() => {}, () => {});
+    }, true);
+
+    promiseErrorTest('promise with catch after then does not fire error event', () => {
+      var promise = new Promise((resolve, reject) => {
+        reject();
+      });
+      promise.then(() => {}).catch(() => {});
+    }, true);
+
+    promiseErrorTest('promise with rejecting catch fires error events', () => {
+      var promise = new Promise((resolve, reject) => {
+        reject();
+      }).catch(throwTestingError);
+    }, false);
 
     return manager;
   }

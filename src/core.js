@@ -152,7 +152,9 @@ var bu = (function(global) {
     for (var name of neededExternals) {
       if (name in externals) {
         var external = externals[name];
-        external.install();
+        if (!external.installed()) {
+          external.install();
+        }
         external.registerCtx(ctx);
       } else {
         throw (new Error(`external '${name}' was not registered`));
@@ -168,12 +170,17 @@ var bu = (function(global) {
   function GlobalExternalHandler() {
     //a map of context ids to specific handlers
     var specificHandlers = {};
+    //whether or not this handler has replaced the default functions
+    var installed = false;
     return {
       /**
        * Sets the global handler up. this should override the global browser
        * API function with a variant that emits events.
        **/
-      install() {},
+      install() {
+        installed = true;
+      },
+      installed: () => installed,
       /**
        * Tells this global handler that a context is using it. This will set up
        * a specific handler.
@@ -186,6 +193,12 @@ var bu = (function(global) {
        **/
       getSpecificHandler(ctx) {
         return specificHandlers[ctx.id()];
+      },
+      /**
+       * Restores the replaced functions with the default ones.
+       **/
+      cleanup() {
+        installed = false;
       }
     };
   }
@@ -209,7 +222,10 @@ var bu = (function(global) {
       mixin,
       getCurrCtx,
       GlobalExternalHandler,
-      registerHandler
+      registerHandler,
+      getExternals() {
+        return externals;
+      }
     }
   };
 })(window);

@@ -102,6 +102,12 @@ modules.test = (function(global) {
         for (var name of usedMocks) {
           mocks[name].cleanup();
         }
+        var externals = bu.internal.getExternals();
+        for (name in externals) {
+          if (externals[name].installed()) {
+            externals[name].cleanup();
+          }
+        }
       }
     };
   }

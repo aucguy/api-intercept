@@ -53,4 +53,39 @@
   registerBasicMock(Element.prototype, 'addEventListener');
   registerBasicMock(Element.prototype, 'removeEventListener');
   registerBasicMock(global, 'requestAnimationFrame');
+
+  /**
+   * Creates a mock that mocks out the promise constructor.
+   **/
+  function PromiseMock() {
+    var sup = test.internal.Mock();
+
+    var originalImmediate = null;
+    var originalPromise = null;
+
+    return bu.internal.mixin(sup, {
+      setup() {
+        sup.setup();
+        originalPromise = Promise;
+        //_immediateFn is used by the polyfill to tell the browser to call the
+        //promise callbacks. Therefore, intercepting the callbacks and calling
+        //them makes it synchonous.
+        originalImmediate = polyfillPromise._immediateFn;
+
+        Promise = polyfillPromise; //jshint ignore:line
+        Promise._immediateFn = callback => {
+          sup.calls().push({
+            callback
+          });
+        };
+      },
+      cleanup() {
+        sup.cleanup();
+        Promise._immediateFn = originalImmediate;
+        Promise = polyfillPromise; //jshint ignore:line
+      }
+    });
+  }
+
+  test.internal.registerMock('promise', PromiseMock());
 })(this);
