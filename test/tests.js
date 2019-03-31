@@ -507,6 +507,12 @@ modules.tests = (function(global) {
       }).catch(throwTestingError);
     }, false);
 
+    promiseErrorTest('promise with finally fires error event', () => {
+      return new Promise((resolve, reject) => {
+        reject();
+      }).finally(() => {});
+    }, false);
+
     return manager;
   }
 

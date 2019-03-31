@@ -1,4 +1,13 @@
 (function() {
+  function overridenMethod(original) {
+    return function() {
+      if (this.$bu$ !== undefined) {
+        this.$bu$.hasCatcher = true;
+      }
+      return original.apply(this, arguments);
+    };
+  }
+
   function PromiseHandler() {
     var sup = bu.internal.GlobalExternalHandler();
 
@@ -6,6 +15,7 @@
     var promiseOriginal = null;
     var thenOriginal = null;
     var catchOriginal = null;
+    var finallyOriginal = null;
 
     //in order to avoid infinite recursion while creating the 'catcher', a 'lock'
     //is used
@@ -20,6 +30,7 @@
 
         thenOriginal = Promise.prototype.then;
         catchOriginal = Promise.prototype.catch;
+        finallyOriginal = Promise.prototype.finally;
 
         Promise = function(arg) { //jshint ignore:line
           var instance = new promiseOriginal(arg);
@@ -54,25 +65,16 @@
 
         Promise.prototype.constructor = Promise;
 
-        Promise.prototype.then = function(resolve, reject) {
-          if (this.$bu$ !== undefined) {
-            this.$bu$.hasCatcher = true;
-          }
-          return thenOriginal.apply(this, arguments);
-        };
-
-        Promise.prototype.catch = function() {
-          if (this.$bu$ !== undefined) {
-            this.$bu$.hasCatcher = true;
-          }
-          return catchOriginal.apply(this, arguments);
-        };
+        Promise.prototype.then = overridenMethod(thenOriginal);
+        Promise.prototype.catch = overridenMethod(catchOriginal);
+        Promise.prototype.finally = overridenMethod(finallyOriginal);
       },
       cleanup() {
         sup.cleanup();
         Promise = promiseOriginal; //jshint ignore:line
         Promise.prototype.then = thenOriginal;
         Promise.prototype.catch = catchOriginal;
+        Promise.prototype.finally = finallyOriginal;
       }
     });
   }
