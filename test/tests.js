@@ -455,7 +455,7 @@ modules.tests = (function(global) {
         testCase.mock(['promise']);
         var ctx = bu.createCtx(['promise']);
 
-        var after = ensureEventOccurs(ctx, 'promise', 'error', undefined, shouldError);
+        var after = ensureEventOccurs(ctx, 'promise', 'error', undefined, !shouldError);
         ctx.run(factory);
         callHandlers(testCase);
         after();
@@ -466,13 +466,13 @@ modules.tests = (function(global) {
       new Promise((resolve, reject) => {
         reject();
       });
-    }, false);
+    }, true);
 
     promiseErrorTest('promise with then fires error event', () => {
       new Promise((resolve, reject) => {
         reject();
       }).then(() => {});
-    }, false);
+    }, true);
 
     promiseErrorTest('promise with throwing then fires error event', () => {
       new Promise((resolve, reject) => {
@@ -480,38 +480,38 @@ modules.tests = (function(global) {
       }).then((resolve, reject) => {
         reject();
       });
-    }, false);
+    }, true);
 
     promiseErrorTest('promise with catch does not fire error event', () => {
       new Promise((resolve, reject) => {
         reject();
       }).catch(() => {});
-    }, true);
+    }, false);
 
     promiseErrorTest('promise with reject callback for then does not fire error event', () => {
       new Promise((resolve, reject) => {
         reject();
       }).then(() => {}, () => {});
-    }, true);
+    }, false);
 
     promiseErrorTest('promise with catch after then does not fire error event', () => {
       var promise = new Promise((resolve, reject) => {
         reject();
       });
       promise.then(() => {}).catch(() => {});
-    }, true);
+    }, false);
 
     promiseErrorTest('promise with rejecting catch fires error events', () => {
       var promise = new Promise((resolve, reject) => {
         reject();
       }).catch(throwTestingError);
-    }, false);
+    }, true);
 
     promiseErrorTest('promise with finally fires error event', () => {
       return new Promise((resolve, reject) => {
         reject();
       }).finally(() => {});
-    }, false);
+    }, true);
 
     return manager;
   }
