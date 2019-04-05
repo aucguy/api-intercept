@@ -455,65 +455,76 @@ modules.tests = (function(global) {
         testCase.mock(['promise']);
         var ctx = bu.createCtx(['promise']);
 
+        var done = false;
+
         var after = ensureEventOccurs(ctx, 'promise', 'error', undefined, !shouldError);
-        ctx.run(factory);
+        ctx.run(factory.bind(null, () => {
+          done = true;
+        }));
         callHandlers(testCase);
         after();
+        test.assert(done);
       });
     }
 
-    promiseErrorTest('constructed promise without catch fires error event', () => {
+    promiseErrorTest('constructed promise without catch fires error event', done => {
       new Promise((resolve, reject) => {
         reject();
+        done();
       });
     }, true);
 
-    promiseErrorTest('promise with then fires error event', () => {
+    promiseErrorTest('promise with then fires error event', done => {
       new Promise((resolve, reject) => {
         reject();
+        done();
       }).then(() => {});
     }, true);
 
-    promiseErrorTest('promise with throwing then fires error event', () => {
+    promiseErrorTest('promise with throwing then fires error event', done => {
       new Promise((resolve, reject) => {
         resolve();
       }).then((resolve, reject) => {
+        done();
         reject();
       });
     }, true);
 
-    promiseErrorTest('promise with catch does not fire error event', () => {
+    promiseErrorTest('promise with catch does not fire error event', done => {
       new Promise((resolve, reject) => {
         reject();
-      }).catch(() => {});
+      }).catch(() => done());
     }, false);
 
-    promiseErrorTest('promise with reject callback for then does not fire error event', () => {
+    promiseErrorTest('promise with reject callback for then does not fire error event', done => {
       new Promise((resolve, reject) => {
         reject();
-      }).then(() => {}, () => {});
+      }).then(() => done(), () => done());
     }, false);
 
-    promiseErrorTest('promise with catch after then does not fire error event', () => {
+    promiseErrorTest('promise with catch after then does not fire error event', done => {
       var promise = new Promise((resolve, reject) => {
         reject();
       });
-      promise.then(() => {}).catch(() => {});
+      promise.then(() => {}).catch(() => done());
     }, false);
 
-    promiseErrorTest('promise with rejecting catch fires error events', () => {
+    promiseErrorTest('promise with rejecting catch fires error events', done => {
       var promise = new Promise((resolve, reject) => {
         reject();
-      }).catch(throwTestingError);
+      }).catch(() => {
+        done();
+        throwTestingError();
+      });
     }, true);
 
-    promiseErrorTest('promise with finally fires error event', () => {
+    promiseErrorTest('promise with finally fires error event', done => {
       return new Promise((resolve, reject) => {
         reject();
-      }).finally(() => {});
+      }).finally(() => done());
     }, true);
 
-    promiseErrorTest('promise with chaining has the same context', () => {
+    promiseErrorTest('promise with chaining has the same context', done => {
       var id1 = bu.internal.getCurrCtx().id();
       var id2 = null;
       var id3 = null;
@@ -525,6 +536,7 @@ modules.tests = (function(global) {
       }).then(() => {
         test.assert(id1 === id2);
         test.assert(id1 === id3);
+        done();
       });
     }, false);
 
