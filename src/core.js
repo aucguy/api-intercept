@@ -124,12 +124,13 @@ var bu = (function(global) {
       /**
        * Runs the given function under this context. Any events triggered by
        * externals will cause events to be triggered on this context's specific
-       * handlers.
+       * handlers. The return value of the function is returned.
        **/
       run(func) {
         enterCtx(self);
-        func();
+        var r = func();
         exitCtx();
+        return r;
       },
       id() {
         return id;
@@ -192,7 +193,7 @@ var bu = (function(global) {
        * Returns the specific handler associated with the context.
        **/
       getSpecificHandler(ctx) {
-        return specificHandlers[ctx.id()];
+        return specificHandlers[ctx.id()] || null;
       },
       /**
        * Restores the replaced functions with the default ones.

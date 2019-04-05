@@ -513,6 +513,21 @@ modules.tests = (function(global) {
       }).finally(() => {});
     }, true);
 
+    promiseErrorTest('promise with chaining has the same context', () => {
+      var id1 = bu.internal.getCurrCtx().id();
+      var id2 = null;
+      var id3 = null;
+      new Promise((resolve, reject) => {
+        id2 = bu.internal.getCurrCtx().id();
+        resolve();
+      }).then(() => {
+        id3 = bu.internal.getCurrCtx().id();
+      }).then(() => {
+        test.assert(id1 === id2);
+        test.assert(id1 === id3);
+      });
+    }, false);
+
     return manager;
   }
 

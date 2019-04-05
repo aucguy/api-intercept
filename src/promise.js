@@ -1,10 +1,21 @@
 (function() {
+  function runUnder(f) {
+    if (typeof f == 'function' && f.$buPromiseUnder$ === undefined) {
+      var ctx = bu.internal.getCurrCtx();
+      var g = () => ctx.run(f);
+      g.$buPromiseUnder$ = true;
+      return g;
+    } else {
+      return f;
+    }
+  }
+
   function overridenMethod(original) {
-    return function() {
+    return function(x, y) {
       if (this.$bu$ !== undefined) {
         this.$bu$.hasCatcher = true;
       }
-      return original.apply(this, arguments);
+      return original.call(this, runUnder(x), runUnder(y));
     };
   }
 
@@ -34,13 +45,14 @@
 
         Promise = function(arg) { //jshint ignore:line
           var instance = new promiseOriginal(arg);
-          if (!creatingHandler) {
+          var handler = self.getSpecificHandler(bu.internal.getCurrCtx());
+
+          if (!creatingHandler && handler !== null) {
             creatingHandler = true;
-            var ctx = bu.internal.getCurrCtx();
 
             catchOriginal.call(instance, error => {
               if (instance.$bu$ !== undefined && !instance.$bu$.hasCatcher) {
-                self.getSpecificHandler(ctx).fire({
+                handler.fire({
                   name: 'error',
                   error,
                   promise: instance
