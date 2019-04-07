@@ -75,11 +75,19 @@ modules.test = (function(global) {
        * @param names the names of the mocks to be used
        **/
       mock(names) {
-        for (var name of names) {
+        names = names.slice();
+        for (var i = 0; i < names.length; i++) {
+          var name = names[i];
           if (!(name in mocks)) {
             throw (new Error(`mock '${name}' was not found`));
           }
-          mocks[name].setup();
+          var mock = mocks[name];
+          for (var use of mock.uses()) {
+            if (!names.includes(use)) {
+              names.push(use);
+            }
+          }
+          mock.setup();
           usedMocks.push(name);
         }
       },
@@ -145,6 +153,9 @@ modules.test = (function(global) {
       },
       calls() {
         return calls;
+      },
+      uses() {
+        return [];
       }
     };
   }

@@ -147,12 +147,20 @@ var bu = (function(global) {
    * @return the newly created context
    **/
   function createCtx(neededExternals) {
-    neededExternals = neededExternals || [];
+    if (neededExternals === undefined) {
+      neededExternals = [];
+    } else {
+      neededExternals = neededExternals.slice();
+    }
     var ctx = Context();
 
-    for (var name of neededExternals) {
+    for (var i = 0; i < neededExternals.length; i++) {
+      var name = neededExternals[i];
       if (name in externals) {
         var external = externals[name];
+        for (var use of external.uses()) {
+          neededExternals.push(use);
+        }
         if (!external.installed()) {
           external.install();
         }
@@ -200,6 +208,9 @@ var bu = (function(global) {
        **/
       cleanup() {
         installed = false;
+      },
+      uses() {
+        return [];
       }
     };
   }

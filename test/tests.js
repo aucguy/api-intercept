@@ -540,6 +540,28 @@ modules.tests = (function(global) {
       });
     }, false);
 
+    manager.add('fetch catches errors', testCase => {
+      testCase.mock(['fetch']);
+      var ctx = bu.createCtx(['fetch']);
+
+      var after = ensureEventOccurs(ctx, 'promise', 'error');
+
+      ctx.run(() => {
+        fetch('nonExistantFile', {
+          foo: true
+        }, (resolve, reject) => {
+          reject();
+        });
+      });
+
+      var args = testCase.calls('fetch')[0].args;
+      test.assert(args[0] === 'nonExistantFile');
+      test.assert(args[1].foo === true);
+
+      callHandlers(testCase);
+      after();
+    });
+
     return manager;
   }
 

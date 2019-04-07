@@ -88,4 +88,34 @@
   }
 
   test.internal.registerMock('promise', PromiseMock());
+
+  function FetchMock() {
+    var sup = test.internal.Mock();
+
+    var originalFetch = fetch;
+
+    return bu.internal.mixin(sup, {
+      setup() {
+        sup.setup();
+
+        fetch = function() {
+          var args = [];
+          sup.calls().push({
+            args: Array.prototype.slice.call(arguments, 0, 2)
+          });
+          return new Promise(arguments[2] || ((resolve, reject) => resolve()));
+        };
+      },
+      cleanup() {
+        sup.cleanup();
+        fetch = originalFetch;
+      },
+      uses() {
+        return ['promise'];
+      }
+    });
+  }
+
+  test.internal.registerMock('fetch', FetchMock());
+
 })(this);

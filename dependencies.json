@@ -1,5 +1,5 @@
 {
-  "all": ["interval", "timeout", "eventListener", "requestAnimationFrame", "promise"],
+  "all": ["interval", "timeout", "eventListener", "requestAnimationFrame", "fetch"],
   "interval": ["basic"],
   "timeout": ["basic"],
   "eventListener": ["basic"],
@@ -7,5 +7,6 @@
   "basic": ["basicAdd", "basicRemove", "core"],
   "basicAdd": ["core"],
   "basicRemove": ["core"],
-  "promise": ["core"]
+  "promise": ["core"],
+  "fetch": ["promise"]
 }
