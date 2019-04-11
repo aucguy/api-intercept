@@ -1,8 +1,8 @@
 {
-  "name": "api-intercept",
+  "name": "@aucguy/api-intercept",
   "version": "0.0.0",
-  "description": "Error handler, module handler, asset loader and loading screen",
-  "main": "base.js",
+  "description": "Intercept calls to javascript APIs",
+  "main": "",
   "repository": {
     "type": "git",
     "url": "https://github.com/aucguy/Basejs.git"
@@ -14,13 +14,13 @@
   "license": "MIT",
   "licenseUrl": "https://opensource.org/licenses/mit-license.php",
   "devDependencies": {
-    "@babel/core": "^7.3.3",
-    "@babel/preset-env": "^7.3.1",
-    "js-beautify": "^1.8.9",
-    "jshint": "^2.10.1",
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
+    "js-beautify": "^1.9.1",
+    "jshint": "^2.10.2",
     "jshint-html-reporter": "^0.2.5",
     "promise-polyfill": "^8.1.0",
-    "uglify-js": "^3.4.9"
+    "uglify-js": "^3.5.4"
   },
   "dependencies": {}
 }
