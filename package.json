@@ -1,6 +1,6 @@
 {
-  "name": "bootstrap-util",
-  "version": "2.0.0-alpha",
+  "name": "api-intercept",
+  "version": "0.0.0",
   "description": "Error handler, module handler, asset loader and loading screen",
   "main": "base.js",
   "repository": {
