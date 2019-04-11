@@ -50,6 +50,13 @@
           if (!creatingHandler && handler !== null) {
             creatingHandler = true;
 
+            var event = {
+              name: 'add',
+              instance
+            };
+            handler.fire(event);
+            instance = event.instance;
+
             catchOriginal.call(instance, error => {
               if (instance.$bu$ !== undefined && !instance.$bu$.hasCatcher) {
                 handler.fire({

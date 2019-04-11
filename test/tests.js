@@ -540,6 +540,42 @@ modules.tests = (function(global) {
       });
     }, false);
 
+    manager.add('promise add event is fired', testCase => {
+      testCase.mock(['promise']);
+      var ctx = bu.createCtx(['promise']);
+
+      var after = ensureEventOccurs(ctx, 'promise', 'add', event => {
+        test.assert(event.instance instanceof Promise);
+      });
+
+      ctx.run(() => {
+        new Promise((resolve, reject) => resolve());
+      });
+
+      callHandlers(testCase);
+      after();
+    });
+
+    manager.add('promise instance is modified', testCase => {
+      testCase.mock(['promise']);
+      var ctx = bu.createCtx(['promise']);
+
+      var occurred = false;
+
+      ctx.handler('promise').on('add', event => {
+        event.instance = new Promise((resolve, reject) => resolve());
+        event.instance.intercepted = true;
+        occurred = true;
+      });
+
+      ctx.run(() => {
+        new Promise((resolve, reject) => resolve());
+      });
+
+      callHandlers(testCase);
+      test.assert(occurred);
+    });
+
     manager.add('fetch catches errors', testCase => {
       testCase.mock(['fetch']);
       var ctx = bu.createCtx(['fetch']);
