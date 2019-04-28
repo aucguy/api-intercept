@@ -1,6 +1,6 @@
 {
   "name": "@aucguy/api-intercept",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Intercept calls to javascript APIs",
   "main": "",
   "repository": {

@@ -30,7 +30,12 @@
 
         options.obj[options.removeName] = function() {
           var ctx = bu.internal.getCurrCtx();
-          self.getSpecificHandler(ctx).fire(options.removeEvent(ctx, arguments));
+          var handler = self.getSpecificHandler(ctx);
+
+          if (handler !== null) {
+            self.getSpecificHandler(ctx).fire(options.removeEvent(ctx, arguments));
+          }
+
           removeOriginal.apply(this, arguments);
         };
       }

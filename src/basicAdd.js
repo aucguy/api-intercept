@@ -33,10 +33,15 @@
 
         options.obj[options.addName] = function() {
           var ctx = bu.internal.getCurrCtx();
-          var apiArgs = arguments;
+          var handler = self.getSpecificHandler(ctx);
 
-          var event = options.addEvent(ctx, apiArgs);
-          self.getSpecificHandler(ctx).fire(event);
+          if (handler === null) {
+            addOriginal.apply(this, arguments);
+            return;
+          }
+
+          var apiArgs = arguments;
+          handler.fire(options.addEvent(ctx, apiArgs));
 
           var func = options.func(apiArgs);
 

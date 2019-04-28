@@ -598,6 +598,34 @@ modules.tests = (function(global) {
       after();
     });
 
+    manager.add('interval without handling context does not error', testCase => {
+      testCase.mock(['setInterval', 'clearInterval']);
+      var ctx = bu.createCtx(['interval']);
+
+      var func = () => {};
+      var id = setInterval(func, 1);
+
+      var args = testCase.calls('setInterval')[0].args;
+      test.assert(args[0] === func);
+      test.assert(args[1] === 1);
+
+      clearInterval(id);
+
+      args = testCase.calls('clearInterval')[0].args;
+      test.assert(args[0] === id);
+    });
+
+    manager.add('promise without handling context does not error', testCase => {
+      testCase.mock(['promise']);
+      var ctx = bu.createCtx(['promise']);
+
+      Promise.resolve(1).then(() => {
+        throw (new Error('promise'));
+      }).catch(() => {});
+
+      callHandlers(testCase);
+    });
+
     return manager;
   }
 
