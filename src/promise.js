@@ -45,7 +45,11 @@
 
         Promise = function(arg) { //jshint ignore:line
           var instance = new promiseOriginal(arg);
-          var handler = self.getSpecificHandler(bu.internal.getCurrCtx());
+          var ctx = bu.internal.getCurrCtx();
+          var handler = null;
+          if (ctx !== null) {
+            handler = self.getSpecificHandler(ctx);
+          }
 
           if (!creatingHandler && handler !== null) {
             creatingHandler = true;

@@ -33,6 +33,12 @@
 
         options.obj[options.addName] = function() {
           var ctx = bu.internal.getCurrCtx();
+
+          if (ctx === null) {
+            addOriginal.apply(this, arguments);
+            return;
+          }
+
           var handler = self.getSpecificHandler(ctx);
 
           if (handler === null) {

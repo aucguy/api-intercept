@@ -127,10 +127,22 @@ var bu = (function(global) {
        * handlers. The return value of the function is returned.
        **/
       run(func) {
+        var error = null;
+        var r = null;
         enterCtx(self);
-        var r = func();
+        try {
+          r = func();
+        } catch (e) {
+          error = e;
+        }
+
         exitCtx();
-        return r;
+
+        if (error !== null) {
+          throw (error);
+        } else {
+          return r;
+        }
       },
       id() {
         return id;

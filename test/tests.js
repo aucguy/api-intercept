@@ -626,6 +626,18 @@ modules.tests = (function(global) {
       callHandlers(testCase);
     });
 
+    manager.add('error thrown within a context exits the context', testCase => {
+      var ctx = bu.createCtx([]);
+
+      try {
+        ctx.run(throwTestingError);
+      } catch (error) {
+        test.assert(error.testing);
+      }
+
+      test.assert(bu.internal.getCurrCtx() === null);
+    });
+
     return manager;
   }
 
