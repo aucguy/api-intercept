@@ -118,4 +118,25 @@
 
   test.internal.registerMock('fetch', FetchMock());
 
+  function DomEventMock() {
+    var sup = test.internal.Mock();
+
+    var originalDesc = {};
+    for (var name of Object.getOwnPropertyNames(HTMLElement.prototype)) {
+      if (name.startsWith('on')) {
+        originalDesc[name] = Object.getOwnPropertyDescriptor(HTMLElement.prototype, name);
+      }
+    }
+
+    return bu.internal.mixin(sup, {
+      cleanup() {
+        sup.cleanup();
+        for (var name of Object.getOwnPropertyNames(originalDesc)) {
+          Object.defineProperty(HTMLElement.prototype, name, originalDesc[name]);
+        }
+      }
+    });
+  }
+
+  test.internal.registerMock('domEvent', DomEventMock());
 })(this);

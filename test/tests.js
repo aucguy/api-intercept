@@ -648,6 +648,121 @@ modules.tests = (function(global) {
       test.assert(bu.internal.getCurrCtx() === null);
     });
 
+    function domEventCalledWithContext(name) {
+      manager.add(`${name} is called within the context`, testCase => {
+        testCase.mock(['domEvent']);
+        var ctx = bu.createCtx(['domEvent']);
+
+        var image = new Image();
+
+        ctx.run(() => {
+          image[name] = () => {
+            test.assert(bu.internal.getCurrCtx() === ctx);
+          };
+        });
+
+        image[name]();
+      });
+    }
+
+    domEventCalledWithContext('onload');
+    domEventCalledWithContext('onerror');
+
+    function domEventWithoutContextDoesNotFail(name) {
+      manager.add(`${name} set without a context does not fail`, testCase => {
+        testCase.mock(['domEvent']);
+
+        var image = new Image();
+
+        image[name] = () => {
+          test.assert(bu.internal.getCurrCtx() === null);
+        };
+
+        image[name]();
+      });
+    }
+
+    domEventWithoutContextDoesNotFail('onload');
+    domEventWithoutContextDoesNotFail('onerror');
+
+    function domEventWithoutHandlerDoesNotFail(name) {
+      manager.add(`${name} set without a domEvent handler does not fail`, testCase => {
+        testCase.mock(['domEvent']);
+        var ctx = bu.createCtx([]);
+
+        var image = new Image();
+
+        ctx.run(() => {
+          image.onload = () => {
+            test.assert(bu.internal.getCurrCtx() === null);
+          };
+        });
+
+        image.onload();
+      });
+    }
+
+    domEventWithoutHandlerDoesNotFail('onload');
+    domEventWithoutHandlerDoesNotFail('onerror');
+
+    function domEventFiresErrorEvent(name) {
+      manager.add(`domEvent ${name} fires add event`, testCase => {
+        testCase.mock(['domEvent']);
+        var ctx = bu.createCtx(['domEvent']);
+
+        var after = ensureEventOccurs(ctx, 'domEvent', 'error', event => {
+          test.assert(event.value === throwTestingError);
+          test.assert(event.property === name);
+        });
+        var image = new Image();
+
+        ctx.run(() => {
+          image[name] = throwTestingError;
+        });
+
+        image[name]();
+        after();
+      });
+    }
+
+    domEventFiresErrorEvent('onload');
+    domEventFiresErrorEvent('onerror');
+
+    function domEventFiresChangeEvent(name) {
+      manager.add(`domEvent ${name} fires change event`, testCase => {
+        testCase.mock(['domEvent']);
+        var ctx = bu.createCtx(['domEvent']);
+
+        var func1 = () => {};
+        var func2 = () => {};
+
+        var expectedOld = null;
+        var expectedNew = func1;
+
+        var after = ensureEventOccurs(ctx, 'domEvent', 'change', event => {
+          test.assert(event.oldValue === expectedOld);
+          test.assert(event.newValue === expectedNew);
+        });
+        var image = new Image();
+
+        ctx.run(() => {
+          image[name] = func1;
+        });
+
+        expectedOld = func1;
+        expectedNew = func2;
+
+        ctx.run(() => {
+          image[name] = func2;
+        });
+
+        after();
+      });
+    }
+
+    domEventFiresChangeEvent('onload');
+    domEventFiresChangeEvent('onerror');
+
     return manager;
   }
 
