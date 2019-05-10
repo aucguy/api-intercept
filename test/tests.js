@@ -448,6 +448,61 @@ modules.tests = (function(global) {
       test.assert(checked);
     });
 
+    function handlerUsesReplacedFunction(options) {
+      options = bu.internal.mixin({
+        cbIndex: null,
+        obj: global,
+        addArgs: func => [func, 1000]
+      }, options);
+
+      manager.add(`${options.addName} uses the replaced function`, testCase => {
+        testCase.mock([options.addName]);
+        var ctx = bu.createCtx([options.handler]);
+
+        var check1 = false;
+        var check2 = false;
+
+        ctx.handler(options.handler).on('add', event => {
+          event.func = () => {
+            check1 = true;
+          };
+        });
+
+        callAPI(ctx, options.obj, options.addName, options.addArgs([() => {
+          check2 = true;
+        }]));
+
+        callCallbacks(testCase, options.addName, options.cbIndex);
+
+        test.assert(check1);
+        test.assert(!check2);
+      });
+    }
+
+    handlerUsesReplacedFunction({
+      addName: 'setInterval',
+      handler: 'interval'
+    });
+
+    handlerUsesReplacedFunction({
+      addName: 'setTimeout',
+      handler: 'timeout'
+    });
+
+    handlerUsesReplacedFunction({
+      addName: 'addEventListener',
+      addArgs: func => ['click', func],
+      handler: 'eventListener',
+      obj: new Image(),
+      cbIndex: 1
+    });
+
+    handlerUsesReplacedFunction({
+      addName: 'requestAnimationFrame',
+      addArgs: func => [func],
+      handler: 'requestAnimationFrame'
+    });
+
     /**
      * Ensures that error events are triggered under the right circumstances
      * for promises.
