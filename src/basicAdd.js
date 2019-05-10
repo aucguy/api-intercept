@@ -14,13 +14,19 @@
         passed to the callback
    * @param options.addEvent A function that takes the current context and the
         arguments passed to the API and returns the add event to be fired
+   * @param options.postaddEvent A function that takes the add event object and
+        the return value of the API and returns the postadd event to be fired
    **/
   bu.internal.BasicAddHandler = function(sup, options) {
     options = bu.internal.mixin({
       obj: global,
       addArgs: (self, args, cb) => [global, cb, args[0]],
       func: args => args[0],
-      params: (apiArgs, cbArgs) => Array.prototype.slice.call(apiArgs, 2)
+      params: (apiArgs, cbArgs) => Array.prototype.slice.call(apiArgs, 2),
+      postaddEvent: (event, returnValue) => bu.internal.mixin(event, {
+        name: 'postadd',
+        returnValue
+      })
     }, options);
 
     var addOriginal = null;
@@ -47,7 +53,8 @@
           }
 
           var apiArgs = arguments;
-          handler.fire(options.addEvent(ctx, apiArgs));
+          var addEvent = options.addEvent(ctx, apiArgs);
+          handler.fire(addEvent);
 
           var func = options.func(apiArgs);
 
@@ -65,7 +72,9 @@
               });
             }
           });
-          return addOriginal.apply(args[0], args.slice(1));
+          var returnValue = addOriginal.apply(args[0], args.slice(1));
+          handler.fire(options.postaddEvent(addEvent, returnValue));
+          return returnValue;
         };
       }
     });

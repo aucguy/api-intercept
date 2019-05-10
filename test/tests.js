@@ -222,7 +222,7 @@ modules.tests = (function(global) {
     });
 
     /**
-     * Ensures that the handler fires an add event when the API is called.
+     * Ensures that the handler fires an add and postadd event when the API is called.
      *
      * @param options.handler the name of the handler
      * @param options.obj the object under which the API that 'adds' a
@@ -243,12 +243,20 @@ modules.tests = (function(global) {
         testCase.mock([options.addName]);
         var ctx = bu.createCtx([options.handler]);
 
-        var after = ensureEventOccurs(ctx, options.handler, 'add', event => {
-          test.assert(options.predicate(event));
+        var returnValue1 = {};
+
+        var after1 = ensureEventOccurs(ctx, options.handler, 'add', event => {
+          returnValue1 = event.returnValue;
         });
 
-        callAPI(ctx, options.obj, options.addName, options.addArgs);
-        after();
+        var after2 = ensureEventOccurs(ctx, options.handler, 'postadd', event => {
+          returnValue1 = event.returnValue;
+        });
+
+        var returnValue2 = callAPI(ctx, options.obj, options.addName, options.addArgs);
+        after1();
+        after2();
+        test.assert(returnValue1 === returnValue2);
       });
     }
 
