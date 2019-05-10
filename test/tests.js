@@ -746,12 +746,14 @@ modules.tests = (function(global) {
 
         var expectedOld = null;
         var expectedNew = func1;
+        var image = null;
 
         var after = ensureEventOccurs(ctx, 'domEvent', 'change', event => {
           test.assert(event.oldValue === expectedOld);
           test.assert(event.newValue === expectedNew);
+          test.assert(event.object === image);
         });
-        var image = new Image();
+        image = new Image();
 
         ctx.run(() => {
           image[name] = func1;

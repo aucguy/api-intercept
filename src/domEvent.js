@@ -29,7 +29,8 @@
                       name: 'change',
                       oldValue: value,
                       newValue: func,
-                      property
+                      property,
+                      object: this
                     });
                   }
 
