@@ -22,7 +22,10 @@
                   }
 
                   var ctx = bu.internal.getCurrCtx();
-                  var handler = self.getSpecificHandler(ctx);
+                  var handler = null;
+                  if (ctx !== null) {
+                    handler = self.getSpecificHandler(ctx);
+                  }
 
                   if (handler !== null) {
                     handler.fire({

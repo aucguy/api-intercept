@@ -829,6 +829,19 @@ modules.tests = (function(global) {
     domEventFiresChangeEvent('onload');
     domEventFiresChangeEvent('onerror');
 
+    function domEventChangeWithoutCtxDoesNotCrash(name) {
+      manager.add(`domEvent ${name} change without a context does not crash`, testCase => {
+        testCase.mock(['domEvent']);
+        var ctx = bu.createCtx(['domEvent']);
+
+        var image = new Image();
+        image[name] = () => {};
+      });
+    }
+
+    domEventChangeWithoutCtxDoesNotCrash('onload');
+    domEventChangeWithoutCtxDoesNotCrash('onerror');
+
     return manager;
   }
 
