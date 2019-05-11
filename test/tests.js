@@ -776,6 +776,7 @@ modules.tests = (function(global) {
         var after = ensureEventOccurs(ctx, 'domEvent', 'error', event => {
           test.assert(event.value === throwTestingError);
           test.assert(event.property === name);
+          test.assert(event.error instanceof Error);
         });
         var image = new Image();
 

@@ -49,7 +49,8 @@
                           handler.fire({
                             name: 'error',
                             value: func,
-                            property
+                            property,
+                            error
                           });
                         }
                       }
