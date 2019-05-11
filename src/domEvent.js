@@ -40,6 +40,9 @@
                   value = func;
 
                   desc.set.call(this, arg => {
+                    if (typeof func !== 'function') {
+                      return;
+                    }
                     if (ctx === null) {
                       func(arg);
                     } else {

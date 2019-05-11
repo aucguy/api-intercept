@@ -842,6 +842,15 @@ modules.tests = (function(global) {
     domEventChangeWithoutCtxDoesNotCrash('onload');
     domEventChangeWithoutCtxDoesNotCrash('onerror');
 
+    manager.add('domEvent does not crash with nonfunction value', testCase => {
+      testCase.mock(['domEvent']);
+      var ctx = bu.createCtx(['domEvent']);
+
+      var image = new Image();
+      image.onload = 1;
+      image.onload();
+    });
+
     return manager;
   }
 
