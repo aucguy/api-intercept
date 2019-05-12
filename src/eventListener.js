@@ -3,10 +3,11 @@
     obj: Element.prototype,
     addName: 'addEventListener',
     removeName: 'removeEventListener',
-    addEvent: (ctx, args) => {
+    addEvent: (ctx, args, self) => {
       return {
         name: 'add',
         ctx,
+        object: self,
         listenerName: args[0],
         func: args[1]
       };

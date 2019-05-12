@@ -53,7 +53,7 @@
           }
 
           var apiArgs = arguments;
-          var addEvent = options.addEvent(ctx, apiArgs);
+          var addEvent = options.addEvent(ctx, apiArgs, this);
           handler.fire(addEvent);
 
           var func = addEvent.func;

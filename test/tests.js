@@ -246,10 +246,12 @@ modules.tests = (function(global) {
         var returnValue1 = {};
 
         var after1 = ensureEventOccurs(ctx, options.handler, 'add', event => {
+          test.assert(options.predicate(event));
           returnValue1 = event.returnValue;
         });
 
         var after2 = ensureEventOccurs(ctx, options.handler, 'postadd', event => {
+          test.assert(options.predicate(event));
           returnValue1 = event.returnValue;
         });
 
@@ -268,13 +270,20 @@ modules.tests = (function(global) {
       handler: 'timeout',
       addName: 'setTimeout'
     });
-    handlerFiresAddEvent({
-      handler: 'eventListener',
-      obj: new Image(),
-      addName: 'addEventListener',
-      addArgs: ['testing', () => undefined],
-      predicate: event => event.listenerName === 'testing'
-    });
+    (function() {
+      var obj = new Image();
+      var func = () => undefined;
+
+      handlerFiresAddEvent({
+        handler: 'eventListener',
+        obj,
+        addName: 'addEventListener',
+        addArgs: ['testing', func],
+        predicate: event => event.object === obj &&
+          event.listenerName === 'testing' &&
+          event.func === func
+      });
+    })();
 
     var cb = () => undefined;
     cb.testing = true;
