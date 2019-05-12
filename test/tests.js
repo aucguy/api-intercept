@@ -340,16 +340,22 @@ modules.tests = (function(global) {
       removeName: 'clearTimeout'
     });
 
-    var args = ['testing', () => {}];
-    handlerFiresRemoveEvent({
-      handler: 'eventListener',
-      obj: new Image(),
-      addName: 'addEventListener',
-      addArgs: args,
-      removeName: 'removeEventListener',
-      removeArgs: ret => args,
-      predicate: (ret, event) => event.listenerName === 'testing'
-    });
+    (function() {
+      var obj = new Image();
+      var func = () => {};
+
+      handlerFiresRemoveEvent({
+        handler: 'eventListener',
+        obj,
+        addName: 'addEventListener',
+        addArgs: ['testing', func],
+        removeName: 'removeEventListener',
+        removeArgs: ret => ['testing', func],
+        predicate: (ret, event) => event.object === obj &&
+          event.listenerName === 'testing' &&
+          event.func === func
+      });
+    })();
 
     /**
      * Ensures that the handler passes the extra arguments to the callback.

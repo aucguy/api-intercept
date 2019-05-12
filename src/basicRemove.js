@@ -37,7 +37,8 @@
           }
 
           if (handler !== null) {
-            self.getSpecificHandler(ctx).fire(options.removeEvent(ctx, arguments));
+            var removeEvent = options.removeEvent(ctx, arguments, this);
+            self.getSpecificHandler(ctx).fire(removeEvent);
           }
 
           removeOriginal.apply(this, arguments);
