@@ -273,15 +273,19 @@ modules.tests = (function(global) {
     (function() {
       var obj = new Image();
       var func = () => undefined;
+      var options = {
+        capture: true
+      };
 
       handlerFiresAddEvent({
         handler: 'eventListener',
         obj,
         addName: 'addEventListener',
-        addArgs: ['testing', func],
+        addArgs: ['testing', func, options],
         predicate: event => event.object === obj &&
           event.listenerName === 'testing' &&
-          event.func === func
+          event.func === func &&
+          event.optionsOrUseCapture === options
       });
     })();
 

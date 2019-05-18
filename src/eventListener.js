@@ -9,7 +9,8 @@
         ctx,
         object: self,
         listenerName: args[0],
-        func: args[1]
+        func: args[1],
+        optionsOrUseCapture: args[2]
       };
     },
     addArgs: (self, args, cb) => [self, args[0], cb]
